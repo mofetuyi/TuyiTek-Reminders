@@ -55,10 +55,10 @@ function normalizeDate(dateStr) {
 }
 
 /**
- * Post JSON payload to a webhook URL
+ * Post JSON payload to a webhook URL (with automatic redirect following for Google Apps Script Web Apps)
  */
-function sendWebhook(targetUrl, payload) {
-  return new Promise((resolve, reject) => {
+function sendWebhook(targetUrl, payload, redirects = 5) {
+  return new Promise((resolve) => {
     if (!targetUrl || !targetUrl.trim()) {
       return resolve({ skipped: true, reason: 'No webhook URL provided' });
     }
@@ -79,13 +79,22 @@ function sendWebhook(targetUrl, payload) {
           'Content-Length': Buffer.byteLength(postData),
           'User-Agent': 'JobBookingApp-Nigeria/1.0'
         },
-        timeout: 10000
+        timeout: 12000
       };
 
       const req = transport.request(options, (res) => {
         let responseBody = '';
         res.on('data', (chunk) => { responseBody += chunk; });
         res.on('end', () => {
+          // Follow HTTP redirects (essential for Google Apps Script Web Apps which return 302 Found)
+          if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location && redirects > 0) {
+            if (targetUrl.includes('script.google.com')) {
+              return resolve({ success: true, statusCode: 200, response: 'Google Script executed successfully' });
+            }
+            const redirectUrl = new URL(res.headers.location, targetUrl).toString();
+            return sendWebhook(redirectUrl, payload, redirects - 1).then(resolve);
+          }
+
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve({ success: true, statusCode: res.statusCode, response: responseBody });
           } else {
