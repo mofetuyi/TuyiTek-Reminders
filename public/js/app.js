@@ -1071,12 +1071,12 @@
         <div class="ai-msg ai-msg-bot">
           <div class="ai-msg-avatar">🤖</div>
           <div class="ai-msg-bubble">
-            <p><strong>Hello boss! Chat refreshed.</strong></p>
-            <p style="margin-top: 4px;">Ask me anything about your current repair, cutting measurements, carpentry finishes, or customer advice!</p>
+            <p><strong>Hello! Chat cleared.</strong></p>
+            <p style="margin-top: 4px;">Ask me anything you'd like to know, learn how to do something, or let's chat!</p>
           </div>
         </div>
       `;
-      showToast('Chat history cleared. Ready for a new discussion!', 'info');
+      showToast('Chat cleared. What would you like to talk about?', 'info');
       aiQuestionInput.focus();
     });
   }
@@ -1095,7 +1095,7 @@
 
     // Append temporary typing indicator
     const typingId = 'typing_' + Date.now();
-    appendChatMessage('bot', '<em>Thinking and analyzing with Gemini AI...</em>', typingId);
+    appendChatMessage('bot', '<em>Thinking...</em>', typingId);
 
     btnAiSend.disabled = true;
 
@@ -1107,8 +1107,7 @@
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
-          messages: chatHistory,
-          trade: currentTradeFilter
+          messages: chatHistory
         })
       });
 
@@ -1124,7 +1123,7 @@
       const typingEl = document.getElementById(typingId);
       if (typingEl) typingEl.remove();
 
-      if (!res.ok) throw new Error(data.error || 'Failed to get advice');
+      if (!res.ok) throw new Error(data.error || 'Failed to get response');
 
       // Add AI response to conversation memory & append to UI
       chatHistory.push({ role: 'model', content: data.answer });
@@ -1135,7 +1134,7 @@
       if (typingEl) typingEl.remove();
       // Remove last user question from memory if failed
       chatHistory.pop();
-      appendChatMessage('bot', `⚠️ Could not reach Gemini AI: ${escapeHtml(err.message)}`);
+      appendChatMessage('bot', `⚠️ Could not reach AI: ${escapeHtml(err.message)}`);
     } finally {
       btnAiSend.disabled = false;
       aiQuestionInput.focus();

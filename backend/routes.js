@@ -258,7 +258,7 @@ router.post('/jobs', auth.requireAuth, async (req, res) => {
  */
 router.post('/ai/advice', auth.requireAuth, async (req, res) => {
   try {
-    const { query, messages, trade } = req.body;
+    const { query, messages } = req.body;
     let chatMessages = [];
 
     if (Array.isArray(messages) && messages.length > 0) {
@@ -266,18 +266,18 @@ router.post('/ai/advice', auth.requireAuth, async (req, res) => {
     } else if (query && query.trim()) {
       chatMessages = [{ role: 'user', content: query.trim() }];
     } else {
-      return res.status(400).json({ error: 'Please enter a trade question or message.' });
+      return res.status(400).json({ error: 'Please enter a message.' });
     }
 
-    const result = await aiService.chat(chatMessages, trade || 'General Trade');
+    const result = await aiService.chat(chatMessages);
     res.json({
       success: true,
       answer: result.response,
       model: result.model
     });
   } catch (err) {
-    console.error('AI Advice Error:', err);
-    res.status(500).json({ error: 'Failed to generate trade advice. Please try again.' });
+    console.error('AI Chat Error:', err);
+    res.status(500).json({ error: 'Failed to generate response. Please try again.' });
   }
 });
 

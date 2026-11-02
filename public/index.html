@@ -40,7 +40,7 @@
         <span>📋</span> My Jobs
       </button>
       <button class="nav-tab" id="tabTradeAI" data-target="viewTradeAI" type="button">
-        <span>🤖</span> Trade AI
+        <span>🤖</span> AI Chat
       </button>
       <!-- Page 3: Hidden Owner Tab (strictly shown only for osanyintuyimofeoluwa@gmail.com) -->
       <button class="nav-tab owner-tab" id="tabOwner" data-target="viewOwner" type="button" style="display: none;">
@@ -323,48 +323,17 @@
          ==================================================================== -->
     <section class="page-view" id="viewTradeAI">
       <div class="page-intro">
-        <h2><span>🤖</span> Trade AI Advisor & Mentor</h2>
-        <p>Expert tips, step-by-step repairs, fabric guides, and workshop troubleshooting powered by Gemini AI.</p>
+        <h2><span>🤖</span> AI Chatbot</h2>
+        <p>Chat conversationally with AI. Ask questions, explore tutorials, brainstorm ideas, or chat naturally!</p>
       </div>
 
-      <!-- Trade Selection Filter Chips -->
-      <div class="trade-chips-bar" id="tradeChipsBar">
-        <button type="button" class="trade-chip active" data-trade="General Trade">🛠️ All Trades</button>
-        <button type="button" class="trade-chip" data-trade="Tailor & Fashion">🧵 Tailoring</button>
-        <button type="button" class="trade-chip" data-trade="Auto Mechanic">🚗 Mechanics</button>
-        <button type="button" class="trade-chip" data-trade="Carpenter & Woodwork">🪚 Carpentry</button>
-        <button type="button" class="trade-chip" data-trade="Electrician & Handiwork">⚡ Electrical</button>
-        <button type="button" class="trade-chip" data-trade="Customer Communication">💬 Customer Tips</button>
-      </div>
 
-      <!-- Quick Question Prompt Carousel / Cards -->
-      <div class="quick-prompts-wrapper">
-        <p class="quick-prompts-title">💡 One-Tap Common Workshop Questions:</p>
-        <div class="quick-prompts-scroll">
-          <button type="button" class="btn-prompt-pill" data-prompt="How many yards of fabric are needed for a full 3-piece Agbada with embroidery?">
-            🧵 Agbada fabric requirements
-          </button>
-          <button type="button" class="btn-prompt-pill" data-prompt="What are the step-by-step troubleshooting checks for a Toyota Camry 2.4L overheating?">
-            🚗 Toyota Camry overheating checks
-          </button>
-          <button type="button" class="btn-prompt-pill" data-prompt="What is the best waterproof varnish or wood finish for an outdoor mahogany dining table?">
-            🪚 Outdoor mahogany table finish
-          </button>
-          <button type="button" class="btn-prompt-pill" data-prompt="What battery and cable gauge size is recommended for a 3.5kVA pure sine wave inverter system?">
-            ⚡ 3.5kVA inverter wiring guide
-          </button>
-          <button type="button" class="btn-prompt-pill" data-prompt="Give me a polite WhatsApp message template to inform a customer that unexpected extra spare parts are required for their repair.">
-            💬 Customer extra parts message
-          </button>
-        </div>
-      </div>
-
-      <!-- AI Q&A Stream Card -->
+      <!-- AI Chat Stream Card -->
       <div class="card card-section-purple" style="padding: 16px;">
         <div class="section-header" style="margin-bottom: 12px; padding-bottom: 8px; justify-content: space-between;">
           <div style="display: flex; align-items: center; gap: 10px;">
             <div class="section-icon purple">🤖</div>
-            <h3 class="section-title">Trade Consultation</h3>
+            <h3 class="section-title">AI Chat Assistant</h3>
           </div>
           <button type="button" class="btn-clear-chat" id="btnClearChat" style="background: #ede9fe; color: #7c3aed; border: none; padding: 4px 10px; border-radius: 8px; font-size: 0.76rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: var(--font-family);">
             <span>🧹</span> Clear Chat
@@ -375,8 +344,8 @@
           <div class="ai-msg ai-msg-bot">
             <div class="ai-msg-avatar">🤖</div>
             <div class="ai-msg-bubble">
-              <p><strong>Hello boss! I am your Job Booking AI Advisor.</strong></p>
-              <p style="margin-top: 4px;">Whether you need sewing measurements, car engine troubleshooting, woodwork finishing tips, or a polite message for your customers, ask me below!</p>
+              <p><strong>Hello! I'm your AI chatbot.</strong></p>
+              <p style="margin-top: 4px;">Ask me anything you'd like to know, learn how to do something, or let's chat!</p>
             </div>
           </div>
         </div>
@@ -388,13 +357,13 @@
               type="text" 
               class="form-input" 
               id="aiQuestionInput" 
-              placeholder="Ask anything (e.g. how to diagnose hard brake pedal, or cut Senator collar)..." 
+              placeholder="Ask me anything (e.g. how to knit, solve a problem, or ask a question)..." 
               required
               style="padding-left: 14px;"
             >
           </div>
           <button type="submit" class="btn-ai-send" id="btnAiSend">
-            <span>Ask AI</span> <span>🚀</span>
+            <span>Send</span> <span>🚀</span>
           </button>
         </form>
       </div>
