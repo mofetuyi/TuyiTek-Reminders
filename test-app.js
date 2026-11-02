@@ -158,8 +158,28 @@ async function runTests() {
   assert.strictEqual(resTurnOff.data.settings.zapier_webhook_url, '');
   console.log('✓ PASS: Empty box turns off Zapier webhook');
 
+  // Test 12: Gemini AI Trade Advice
+  console.log('Test 12: AI Trade Advice via Gemini...');
+  const resAiAdvice = await makeRequest('POST', '/api/ai/advice', {
+    query: 'What are the essential checks for a Toyota Camry 2.4L overheating problem?',
+    trade: 'Auto Mechanic'
+  }, workerToken);
+  assert.strictEqual(resAiAdvice.status, 200);
+  assert.ok(resAiAdvice.data.answer, 'AI should return answer');
+  assert.ok(resAiAdvice.data.answer.length > 20, 'Answer should be descriptive');
+  console.log('✓ PASS: Gemini AI Trade Advice generated successfully (Model: ' + resAiAdvice.data.model + ')');
+
+  // Test 13: Gemini AI Suggest Job Details
+  console.log('Test 13: AI Suggest Job Details & Timeline...');
+  const resAiSuggest = await makeRequest('POST', '/api/ai/suggest-details', {
+    itemJob: 'Ankara 6-piece flared wedding gown with lace trimming'
+  }, workerToken);
+  assert.strictEqual(resAiSuggest.status, 200);
+  assert.ok(resAiSuggest.data.suggestion, 'AI should return suggestion');
+  console.log('✓ PASS: Gemini AI Job Scope & Turnaround generated successfully');
+
   console.log('\n========================================');
-  console.log('🎉 ALL 11 TESTS PASSED SUCCESSFULLY! 🎉');
+  console.log('🎉 ALL 13 TESTS PASSED SUCCESSFULLY! 🎉');
   console.log('========================================');
   process.exit(0);
 }

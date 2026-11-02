@@ -1,0 +1,9 @@
+{
+  "event": "auth_verification_code",
+  "email": "osanyintuyimofeoluwa@gmail.com",
+  "name": "Mofeoluwa Osanyintuyi",
+  "code": "729481",
+  "expires_in_minutes": 15,
+  "app_name": "Job Booking",
+  "created_at": "2026-11-02T10:28:00.000Z"
+}

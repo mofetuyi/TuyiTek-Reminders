@@ -56,9 +56,11 @@
   const kpiOverdue = document.getElementById('kpiOverdue');
   const kpiSignups = document.getElementById('kpiSignups');
   const zapierWebhookUrl = document.getElementById('zapierWebhookUrl');
+  const authWebhookUrl = document.getElementById('authWebhookUrl');
   const googleAppsScriptUrl = document.getElementById('googleAppsScriptUrl');
   const btnSaveZapierSettings = document.getElementById('btnSaveZapierSettings');
   const btnTestWebhook = document.getElementById('btnTestWebhook');
+  const btnTestAuthWebhook = document.getElementById('btnTestAuthWebhook');
   const ownerUsersList = document.getElementById('ownerUsersList');
   const userCountSpan = document.getElementById('userCountSpan');
 
@@ -689,6 +691,9 @@
       if (data.settings && data.settings.zapier_webhook_url !== undefined) {
         zapierWebhookUrl.value = data.settings.zapier_webhook_url;
       }
+      if (data.settings && data.settings.auth_webhook_url !== undefined && authWebhookUrl) {
+        authWebhookUrl.value = data.settings.auth_webhook_url;
+      }
       if (data.settings && data.settings.google_apps_script_url !== undefined && googleAppsScriptUrl) {
         googleAppsScriptUrl.value = data.settings.google_apps_script_url;
       }
@@ -736,6 +741,7 @@
     if (!authToken) return;
 
     const url = zapierWebhookUrl.value.trim();
+    const authUrl = authWebhookUrl ? authWebhookUrl.value.trim() : '';
     const scriptUrl = googleAppsScriptUrl ? googleAppsScriptUrl.value.trim() : '';
     btnSaveZapierSettings.disabled = true;
     btnSaveZapierSettings.innerHTML = '<span>⏳</span> Saving...';
@@ -749,6 +755,7 @@
         },
         body: JSON.stringify({
           zapier_webhook_url: url,
+          auth_webhook_url: authUrl,
           google_apps_script_url: scriptUrl
         })
       });
@@ -756,14 +763,55 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save settings');
 
-      showToast(url ? 'Zapier webhook link saved in App Settings!' : 'Zapier webhook turned off (empty link).', 'success');
+      showToast('Settings saved successfully in App Settings!', 'success');
     } catch (err) {
       showToast(err.message, 'error');
     } finally {
       btnSaveZapierSettings.disabled = false;
-      btnSaveZapierSettings.innerHTML = '<span>💾</span> Save Webhook Link';
+      btnSaveZapierSettings.innerHTML = '<span>💾</span> Save Webhook Settings';
     }
   });
+
+  // Test Auth Webhook Ping
+  if (btnTestAuthWebhook) {
+    btnTestAuthWebhook.addEventListener('click', async () => {
+      if (!authToken) return;
+
+      const url = (authWebhookUrl ? authWebhookUrl.value.trim() : '') || zapierWebhookUrl.value.trim();
+      if (!url) {
+        showToast('Please enter an Auth Webhook URL first.', 'error');
+        return;
+      }
+
+      btnTestAuthWebhook.disabled = true;
+      btnTestAuthWebhook.innerHTML = '<span>⏳</span> Sending ping...';
+
+      try {
+        const res = await fetch('/api/owner/test-webhook', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Test webhook failed');
+
+        if (data.success) {
+          showToast('Test auth code webhook successfully pinged!', 'success');
+        } else {
+          showToast('Webhook endpoint responded with error. Check URL.', 'error');
+        }
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btnTestAuthWebhook.disabled = false;
+        btnTestAuthWebhook.innerHTML = '<span>✉️</span> Test Auth Code Ping';
+      }
+    });
+  }
 
   // Test Webhook Ping
   btnTestWebhook.addEventListener('click', async () => {
@@ -803,6 +851,214 @@
       btnTestWebhook.innerHTML = '<span>🚀</span> Test Webhook Ping';
     }
   });
+
+
+  /* ========================================================================
+     TRADE AI ASSISTANT & SMART SCOPING
+     Powered by Google Gemini AI
+     ======================================================================== */
+
+  // AI Elements
+  const btnAiSuggestDetails = document.getElementById('btnAiSuggestDetails');
+  const aiSuggestionBox = document.getElementById('aiSuggestionBox');
+  const aiSuggestionContent = document.getElementById('aiSuggestionContent');
+  const btnCloseAiSuggestion = document.getElementById('btnCloseAiSuggestion');
+  const btnApplyAiSuggestion = document.getElementById('btnApplyAiSuggestion');
+
+  const tradeChipsBar = document.getElementById('tradeChipsBar');
+  const aiChatStream = document.getElementById('aiChatStream');
+  const aiAskForm = document.getElementById('aiAskForm');
+  const aiQuestionInput = document.getElementById('aiQuestionInput');
+  const btnAiSend = document.getElementById('btnAiSend');
+  const quickPromptButtons = document.querySelectorAll('.btn-prompt-pill');
+
+  let currentTradeFilter = 'General Trade';
+  let lastAiSuggestionRaw = '';
+
+  // Simple Markdown Formatter
+  function formatMarkdown(text) {
+    if (!text) return '';
+    let html = escapeHtml(text);
+
+    // Bold **text**
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Headings ### or ##
+    html = html.replace(/^### (.*$)/gim, '<h4 style="margin: 8px 0 4px 0; color: #0f766e; font-size: 0.95rem;">$1</h4>');
+    html = html.replace(/^## (.*$)/gim, '<h3 style="margin: 10px 0 6px 0; color: #0f172a; font-size: 1.05rem;">$1</h3>');
+
+    // Numbered lists 1. 2.
+    html = html.replace(/^\d+\.\s+(.*$)/gim, '<li style="margin-bottom: 4px;">$1</li>');
+
+    // Bullet lists - or *
+    html = html.replace(/^[\*\-]\s+(.*$)/gim, '<li style="margin-bottom: 4px;">$1</li>');
+
+    // Wrap list items
+    html = html.replace(/(<li.*<\/li>)/gms, '<ul style="padding-left: 20px; margin: 6px 0;">$1</ul>');
+
+    // Paragraph breaks
+    html = html.replace(/\n\n+/g, '</p><p style="margin-top: 6px;">');
+    html = `<p>${html}</p>`;
+
+    return html;
+  }
+
+  // Inline AI: Suggest Job Details & Timeline on New Job Form
+  if (btnAiSuggestDetails) {
+    btnAiSuggestDetails.addEventListener('click', async () => {
+      const itemJob = itemJobInput.value.trim();
+      if (!itemJob) {
+        showToast('Please type an Item / Job title first (e.g. Toyota Camry AC repair, or Ankara gown).', 'info');
+        itemJobInput.focus();
+        return;
+      }
+
+      btnAiSuggestDetails.disabled = true;
+      btnAiSuggestDetails.innerHTML = '<span>⏳</span> Thinking...';
+
+      try {
+        const res = await fetch('/api/ai/suggest-details', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ itemJob })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to get suggestion');
+
+        lastAiSuggestionRaw = data.suggestion;
+        aiSuggestionContent.innerHTML = formatMarkdown(data.suggestion);
+        aiSuggestionBox.style.display = 'block';
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        btnAiSuggestDetails.disabled = false;
+        btnAiSuggestDetails.innerHTML = '<span>✨</span> Ask Gemini AI: Suggest Job Details & Timeline';
+      }
+    });
+  }
+
+  if (btnCloseAiSuggestion) {
+    btnCloseAiSuggestion.addEventListener('click', () => {
+      aiSuggestionBox.style.display = 'none';
+    });
+  }
+
+  if (btnApplyAiSuggestion) {
+    btnApplyAiSuggestion.addEventListener('click', () => {
+      if (!lastAiSuggestionRaw) return;
+      const currentVal = jobDetailsInput.value.trim();
+      if (currentVal) {
+        jobDetailsInput.value = `${currentVal}\n\n[AI Recommendations]:\n${lastAiSuggestionRaw}`;
+      } else {
+        jobDetailsInput.value = lastAiSuggestionRaw;
+      }
+      aiSuggestionBox.style.display = 'none';
+      showToast('Copied into Job Details!', 'success');
+      jobDetailsInput.focus();
+    });
+  }
+
+  // Trade selection chips
+  if (tradeChipsBar) {
+    tradeChipsBar.addEventListener('click', (e) => {
+      const chip = e.target.closest('.trade-chip');
+      if (!chip) return;
+
+      document.querySelectorAll('.trade-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      currentTradeFilter = chip.dataset.trade || 'General Trade';
+    });
+  }
+
+  // Quick Prompt Pills
+  quickPromptButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const prompt = btn.dataset.prompt;
+      if (prompt) {
+        aiQuestionInput.value = prompt;
+        submitTradeQuestion(prompt);
+      }
+    });
+  });
+
+  // Ask AI Form Submit
+  if (aiAskForm) {
+    aiAskForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = aiQuestionInput.value.trim();
+      if (!query) return;
+      submitTradeQuestion(query);
+    });
+  }
+
+  async function submitTradeQuestion(questionText) {
+    if (!authToken) {
+      showToast('Please sign in first.', 'error');
+      showAuthModal();
+      return;
+    }
+
+    // Append user message to stream
+    appendChatMessage('user', questionText);
+    aiQuestionInput.value = '';
+
+    // Append temporary typing indicator
+    const typingId = 'typing_' + Date.now();
+    appendChatMessage('bot', '<em>Thinking and analyzing your trade question with Gemini...</em>', typingId);
+
+    btnAiSend.disabled = true;
+
+    try {
+      const res = await fetch('/api/ai/advice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({
+          query: questionText,
+          trade: currentTradeFilter
+        })
+      });
+
+      const data = await res.json();
+      const typingEl = document.getElementById(typingId);
+      if (typingEl) typingEl.remove();
+
+      if (!res.ok) throw new Error(data.error || 'Failed to get advice');
+
+      appendChatMessage('bot', data.answer);
+
+    } catch (err) {
+      const typingEl = document.getElementById(typingId);
+      if (typingEl) typingEl.remove();
+      appendChatMessage('bot', `⚠️ Could not reach Gemini AI: ${escapeHtml(err.message)}`);
+    } finally {
+      btnAiSend.disabled = false;
+    }
+  }
+
+  function appendChatMessage(sender, text, elementId = null) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `ai-msg ${sender === 'user' ? 'ai-msg-user' : 'ai-msg-bot'}`;
+    if (elementId) msgDiv.id = elementId;
+
+    const avatar = sender === 'user' ? '👤' : '🤖';
+    const formattedContent = sender === 'user' ? `<p>${escapeHtml(text)}</p>` : formatMarkdown(text);
+
+    msgDiv.innerHTML = `
+      <div class="ai-msg-avatar" aria-hidden="true">${avatar}</div>
+      <div class="ai-msg-bubble">${formattedContent}</div>
+    `;
+
+    aiChatStream.appendChild(msgDiv);
+    aiChatStream.scrollTop = aiChatStream.scrollHeight;
+  }
 
 
   /* ========================================================================

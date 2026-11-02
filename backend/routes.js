@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('./db');
 const auth = require('./auth');
 const integrations = require('./integrations');
+const aiService = require('./ai-service');
 
 const TZ = 'Africa/Lagos';
 
@@ -36,13 +37,30 @@ function getDaysLeft(collectionDateStr) {
 /**
  * Request an email verification code (Magic 6-digit code)
  */
-router.post('/auth/request-code', (req, res) => {
+router.post('/auth/request-code', async (req, res) => {
   try {
     const { email, name } = req.body;
     if (!email) {
       return res.status(400).json({ error: 'Please enter your email address' });
     }
     const result = auth.requestVerificationCode(email, name);
+
+    // Asynchronously send to Zapier/n8n Auth Webhook if configured
+    const settings = db.getSettings();
+    const webhookTarget = settings.auth_webhook_url || settings.zapier_webhook_url;
+    if (webhookTarget && webhookTarget.trim()) {
+      integrations.sendWebhook(webhookTarget.trim(), {
+        event: 'auth_verification_code',
+        email: result.email,
+        name: name || '',
+        code: result.code,
+        expires_in_minutes: 15,
+        app_name: 'Job Booking',
+        created_at: new Date().toISOString()
+      }).then(r => console.log('[AUTH WEBHOOK] Code dispatched:', r.statusCode || r.skipped))
+        .catch(e => console.warn('[AUTH WEBHOOK] Dispatch error:', e.message));
+    }
+
     res.json({
       success: true,
       message: 'Verification code generated! Please check your email.',
@@ -252,6 +270,56 @@ router.post('/jobs', auth.requireAuth, async (req, res) => {
 
 
 /* ==========================================================================
+   AI ASSISTANT ROUTES (Protected by requireAuth)
+   Powered by Google Gemini AI to advise, teach, and assist Nigerian artisans
+   ========================================================================== */
+
+/**
+ * Get expert trade advice, workshop tips, and troubleshooting
+ */
+router.post('/ai/advice', auth.requireAuth, async (req, res) => {
+  try {
+    const { query, trade } = req.body;
+    if (!query || !query.trim()) {
+      return res.status(400).json({ error: 'Please enter a trade question or describe your job issue.' });
+    }
+
+    const result = await aiService.getTradeAdvice(query.trim(), trade || 'General Trade');
+    res.json({
+      success: true,
+      answer: result.response,
+      model: result.model
+    });
+  } catch (err) {
+    console.error('AI Advice Error:', err);
+    res.status(500).json({ error: 'Failed to generate trade advice. Please try again.' });
+  }
+});
+
+/**
+ * Suggest job details, inspection points, and turnaround timeline for New Job form
+ */
+router.post('/ai/suggest-details', auth.requireAuth, async (req, res) => {
+  try {
+    const { itemJob } = req.body;
+    if (!itemJob || !itemJob.trim()) {
+      return res.status(400).json({ error: 'Please enter an Item / Job title first.' });
+    }
+
+    const result = await aiService.suggestJobDetails(itemJob.trim());
+    res.json({
+      success: true,
+      suggestion: result.response,
+      model: result.model
+    });
+  } catch (err) {
+    console.error('AI Suggest Details Error:', err);
+    res.status(500).json({ error: 'Failed to generate job suggestion.' });
+  }
+});
+
+
+/* ==========================================================================
    PAGE 3: OWNER ROUTES (Protected by requireAuth and requireOwner)
    Strictly checked on the server too!
    ========================================================================== */
@@ -296,6 +364,7 @@ router.get('/owner/data', auth.requireAuth, auth.requireOwner, (req, res) => {
       users,
       settings: {
         zapier_webhook_url: settings.zapier_webhook_url || '',
+        auth_webhook_url: settings.auth_webhook_url || '',
         google_sheet_id: settings.google_sheet_id || '',
         google_sheet_tab: settings.google_sheet_tab || '',
         google_apps_script_url: settings.google_apps_script_url || '',
@@ -316,11 +385,12 @@ router.get('/owner/data', auth.requireAuth, auth.requireOwner, (req, res) => {
  */
 router.post('/owner/settings', auth.requireAuth, auth.requireOwner, (req, res) => {
   try {
-    const { zapier_webhook_url, google_apps_script_url } = req.body;
+    const { zapier_webhook_url, auth_webhook_url, google_apps_script_url } = req.body;
     
     // Store in App Settings table; empty turns it off
     const updated = db.updateSettings({
       zapier_webhook_url: (zapier_webhook_url || '').trim(),
+      auth_webhook_url: (auth_webhook_url || '').trim(),
       google_apps_script_url: (google_apps_script_url || '').trim()
     });
 

@@ -39,6 +39,9 @@
       <button class="nav-tab" id="tabMyJobs" data-target="viewMyJobs" type="button">
         <span>📋</span> My Jobs
       </button>
+      <button class="nav-tab" id="tabTradeAI" data-target="viewTradeAI" type="button">
+        <span>🤖</span> Trade AI
+      </button>
       <!-- Page 3: Hidden Owner Tab (strictly shown only for osanyintuyimofeoluwa@gmail.com) -->
       <button class="nav-tab owner-tab" id="tabOwner" data-target="viewOwner" type="button" style="display: none;">
         <span>👑</span> Owner
@@ -164,6 +167,22 @@
                 required 
                 maxlength="150"
               >
+            </div>
+            <!-- AI Assist Inline Action -->
+            <div style="margin-top: 8px;">
+              <button type="button" class="btn-ai-sparkle" id="btnAiSuggestDetails">
+                <span>✨</span> Ask Gemini AI: Suggest Job Details & Timeline
+              </button>
+              <div id="aiSuggestionBox" style="display: none;" class="ai-suggestion-box">
+                <div class="ai-suggestion-header">
+                  <span>💡 Gemini AI Workshop Scope & Tips</span>
+                  <button type="button" class="btn-close-ai" id="btnCloseAiSuggestion" aria-label="Close">✕</button>
+                </div>
+                <div id="aiSuggestionContent" class="ai-suggestion-content"></div>
+                <button type="button" class="btn-apply-ai" id="btnApplyAiSuggestion">
+                  <span>📥</span> Copy into Job Details
+                </button>
+              </div>
             </div>
           </div>
 
@@ -297,6 +316,87 @@
 
 
     <!-- ====================================================================
+         PAGE: "TRADE AI ASSISTANT"
+         Powered by Google Gemini AI
+         Provides expert advice, teaching, calculations, and job guidance
+         for Nigerian artisans and tradespeople.
+         ==================================================================== -->
+    <section class="page-view" id="viewTradeAI">
+      <div class="page-intro">
+        <h2><span>🤖</span> Trade AI Advisor & Mentor</h2>
+        <p>Expert tips, step-by-step repairs, fabric guides, and workshop troubleshooting powered by Gemini AI.</p>
+      </div>
+
+      <!-- Trade Selection Filter Chips -->
+      <div class="trade-chips-bar" id="tradeChipsBar">
+        <button type="button" class="trade-chip active" data-trade="General Trade">🛠️ All Trades</button>
+        <button type="button" class="trade-chip" data-trade="Tailor & Fashion">🧵 Tailoring</button>
+        <button type="button" class="trade-chip" data-trade="Auto Mechanic">🚗 Mechanics</button>
+        <button type="button" class="trade-chip" data-trade="Carpenter & Woodwork">🪚 Carpentry</button>
+        <button type="button" class="trade-chip" data-trade="Electrician & Handiwork">⚡ Electrical</button>
+        <button type="button" class="trade-chip" data-trade="Customer Communication">💬 Customer Tips</button>
+      </div>
+
+      <!-- Quick Question Prompt Carousel / Cards -->
+      <div class="quick-prompts-wrapper">
+        <p class="quick-prompts-title">💡 One-Tap Common Workshop Questions:</p>
+        <div class="quick-prompts-scroll">
+          <button type="button" class="btn-prompt-pill" data-prompt="How many yards of fabric are needed for a full 3-piece Agbada with embroidery?">
+            🧵 Agbada fabric requirements
+          </button>
+          <button type="button" class="btn-prompt-pill" data-prompt="What are the step-by-step troubleshooting checks for a Toyota Camry 2.4L overheating?">
+            🚗 Toyota Camry overheating checks
+          </button>
+          <button type="button" class="btn-prompt-pill" data-prompt="What is the best waterproof varnish or wood finish for an outdoor mahogany dining table?">
+            🪚 Outdoor mahogany table finish
+          </button>
+          <button type="button" class="btn-prompt-pill" data-prompt="What battery and cable gauge size is recommended for a 3.5kVA pure sine wave inverter system?">
+            ⚡ 3.5kVA inverter wiring guide
+          </button>
+          <button type="button" class="btn-prompt-pill" data-prompt="Give me a polite WhatsApp message template to inform a customer that unexpected extra spare parts are required for their repair.">
+            💬 Customer extra parts message
+          </button>
+        </div>
+      </div>
+
+      <!-- AI Q&A Stream Card -->
+      <div class="card card-section-purple" style="padding: 16px;">
+        <div class="section-header" style="margin-bottom: 12px; padding-bottom: 8px;">
+          <div class="section-icon purple">🤖</div>
+          <h3 class="section-title">Trade Consultation</h3>
+        </div>
+
+        <div class="ai-chat-stream" id="aiChatStream">
+          <div class="ai-msg ai-msg-bot">
+            <div class="ai-msg-avatar">🤖</div>
+            <div class="ai-msg-bubble">
+              <p><strong>Hello boss! I am your Job Booking AI Advisor.</strong></p>
+              <p style="margin-top: 4px;">Whether you need sewing measurements, car engine troubleshooting, woodwork finishing tips, or a polite message for your customers, ask me below!</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Input Form -->
+        <form id="aiAskForm" class="ai-input-form" style="margin-top: 14px;">
+          <div class="input-container" style="flex: 1;">
+            <input 
+              type="text" 
+              class="form-input" 
+              id="aiQuestionInput" 
+              placeholder="Ask anything (e.g. how to diagnose hard brake pedal, or cut Senator collar)..." 
+              required
+              style="padding-left: 14px;"
+            >
+          </div>
+          <button type="submit" class="btn-ai-send" id="btnAiSend">
+            <span>Ask AI</span> <span>🚀</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+
+    <!-- ====================================================================
          PAGE 3: "OWNER" DASHBOARD
          Only visible & accessible to osanyintuyimofeoluwa@gmail.com
          Checked on the server too!
@@ -355,12 +455,30 @@
             >
           </div>
         </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label" for="authWebhookUrl">
+            Email Verification Code Webhook (Zapier / n8n)
+          </label>
+          <div class="input-container">
+            <span class="field-icon" aria-hidden="true">✉️</span>
+            <input 
+              type="url" 
+              class="form-input" 
+              id="authWebhookUrl" 
+              placeholder="https://hooks.zapier.com/hooks/catch/... or n8n webhook"
+            >
+          </div>
+          <p class="form-help">Automatically delivers 6-digit login codes to workers via Gmail or Zapier Email. Import the workflow file from your Downloads folder.</p>
+        </div>
         <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
           <button type="button" class="btn-save-settings" id="btnSaveZapierSettings">
-            <span>💾</span> Save Webhook Link
+            <span>💾</span> Save Webhook Settings
           </button>
           <button type="button" class="btn-test-webhook" id="btnTestWebhook">
-            <span>🚀</span> Test Webhook Ping
+            <span>🚀</span> Test Job Ping
+          </button>
+          <button type="button" class="btn-test-webhook" id="btnTestAuthWebhook">
+            <span>✉️</span> Test Auth Code Ping
           </button>
         </div>
       </div>
