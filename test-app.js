@@ -51,26 +51,34 @@ async function runTests() {
   assert.strictEqual(resUnauth.status, 401, 'Should return 401 Unauthorized');
   console.log('✓ PASS: 401 Unauthorized returned');
 
-  // Test 2: Request verification code
-  console.log('Test 2: Request verification code...');
-  const resCode = await makeRequest('POST', '/api/auth/request-code', {
-    email: 'test.tailor@example.com',
-    name: 'Kolawole Stitches'
+  // Test 2: Register a new user with full details (First, Last, Email, Phone, Password, Terms)
+  console.log('Test 2: Register account with real credentials...');
+  const testWorkerEmail = 'artisan_' + Date.now() + '@example.com';
+  const resRegister = await makeRequest('POST', '/api/auth/register', {
+    firstName: 'Babatunde',
+    lastName: 'Fashola',
+    email: testWorkerEmail,
+    phone: '0814 111 2233',
+    password: 'Password123!',
+    confirmPassword: 'Password123!',
+    agreedToTerms: true
   });
-  assert.strictEqual(resCode.status, 200);
-  assert.ok(resCode.data.previewCode, 'Should return preview code');
-  console.log('✓ PASS: Code generated:', resCode.data.previewCode);
+  assert.strictEqual(resRegister.status, 200);
+  assert.ok(resRegister.data.token, 'Should return auth token');
+  assert.strictEqual(resRegister.data.user.email, testWorkerEmail);
+  assert.strictEqual(resRegister.data.user.phone, '+2348141112233');
+  const workerToken = resRegister.data.token;
+  console.log('✓ PASS: Worker registered successfully without verification code');
 
-  // Test 3: Verify code and get session token
-  console.log('Test 3: Verify code...');
-  const resVerify = await makeRequest('POST', '/api/auth/verify-code', {
-    email: 'test.tailor@example.com',
-    code: resCode.data.previewCode
+  // Test 3: Sign in with registered credentials
+  console.log('Test 3: Sign in with email and password...');
+  const resLogin = await makeRequest('POST', '/api/auth/login', {
+    email: testWorkerEmail,
+    password: 'Password123!'
   });
-  assert.strictEqual(resVerify.status, 200);
-  assert.ok(resVerify.data.token, 'Should return auth token');
-  const workerToken = resVerify.data.token;
-  console.log('✓ PASS: Worker authenticated, token received');
+  assert.strictEqual(resLogin.status, 200);
+  assert.ok(resLogin.data.token, 'Should return auth token on login');
+  console.log('✓ PASS: Worker signed in successfully');
 
   // Test 4: Authenticated user can fetch jobs
   console.log('Test 4: Worker fetches /api/jobs...');
@@ -85,11 +93,11 @@ async function runTests() {
   assert.strictEqual(resOwnerDeny.status, 403, 'Should return 403 Forbidden for non-owner');
   console.log('✓ PASS: 403 Forbidden returned for non-owner');
 
-  // Test 6: Authenticate as Owner (osanyintuyimofeoluwa@gmail.com)
-  console.log('Test 6: Owner authentication...');
-  const resOwnerAuth = await makeRequest('POST', '/api/auth/google', {
+  // Test 6: Authenticate as Owner (osanyintuyimofeoluwa@gmail.com) with password
+  console.log('Test 6: Owner authentication with email and password...');
+  const resOwnerAuth = await makeRequest('POST', '/api/auth/login', {
     email: 'osanyintuyimofeoluwa@gmail.com',
-    name: 'Mofeoluwa Osanyintuyi'
+    password: 'Admin@123'
   });
   assert.strictEqual(resOwnerAuth.status, 200);
   assert.strictEqual(resOwnerAuth.data.user.isOwner, true);

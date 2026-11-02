@@ -64,17 +64,36 @@
   const ownerUsersList = document.getElementById('ownerUsersList');
   const userCountSpan = document.getElementById('userCountSpan');
 
-  // Auth Modal Elements
-  const btnGoogleSignIn = document.getElementById('btnGoogleSignIn');
-  const requestCodeForm = document.getElementById('requestCodeForm');
-  const authEmailInput = document.getElementById('authEmail');
-  const authNameInput = document.getElementById('authName');
-  const verifyCodeForm = document.getElementById('verifyCodeForm');
-  const authCodeInput = document.getElementById('authCode');
-  const codeSentHelpText = document.getElementById('codeSentHelpText');
-  const btnBackToEmail = document.getElementById('btnBackToEmail');
-  const presetOwnerBtn = document.getElementById('presetOwnerBtn');
-  const presetArtisanBtn = document.getElementById('presetArtisanBtn');
+  // Auth Modal Elements (Production Sign Up & Sign In)
+  const authModalTitle = document.getElementById('authModalTitle');
+  const authModalSubtitle = document.getElementById('authModalSubtitle');
+  const btnTabSignUp = document.getElementById('btnTabSignUp');
+  const btnTabSignIn = document.getElementById('btnTabSignIn');
+  const signUpForm = document.getElementById('signUpForm');
+  const signInForm = document.getElementById('signInForm');
+  const linkSwitchToSignIn = document.getElementById('linkSwitchToSignIn');
+  const linkSwitchToSignUp = document.getElementById('linkSwitchToSignUp');
+
+  // Sign Up Inputs
+  const regFirstName = document.getElementById('regFirstName');
+  const regLastName = document.getElementById('regLastName');
+  const regEmail = document.getElementById('regEmail');
+  const regPhone = document.getElementById('regPhone');
+  const regPassword = document.getElementById('regPassword');
+  const regConfirmPassword = document.getElementById('regConfirmPassword');
+  const regAgreeTerms = document.getElementById('regAgreeTerms');
+  const btnSubmitSignUp = document.getElementById('btnSubmitSignUp');
+
+  // Sign In Inputs
+  const loginEmail = document.getElementById('loginEmail');
+  const loginPassword = document.getElementById('loginPassword');
+  const btnSubmitSignIn = document.getElementById('btnSubmitSignIn');
+
+  // Terms Modal
+  const termsModal = document.getElementById('termsModal');
+  const linkOpenTerms = document.getElementById('linkOpenTerms');
+  const btnCloseTerms = document.getElementById('btnCloseTerms');
+  const btnAcceptTermsClose = document.getElementById('btnAcceptTermsClose');
 
   const toastContainer = document.getElementById('toastContainer');
 
@@ -142,14 +161,39 @@
     showAuthModal();
   }
 
-  function showAuthModal() {
+  function setAuthMode(mode) {
+    if (mode === 'signup') {
+      btnTabSignUp.style.background = '#ffffff';
+      btnTabSignUp.style.color = '#0f766e';
+      btnTabSignUp.style.boxShadow = '0 2px 4px rgba(0,0,0,0.06)';
+      btnTabSignIn.style.background = 'transparent';
+      btnTabSignIn.style.color = '#64748b';
+      btnTabSignIn.style.boxShadow = 'none';
+
+      signUpForm.style.display = 'block';
+      signInForm.style.display = 'none';
+      authModalTitle.textContent = 'Create Your Account';
+      authModalSubtitle.textContent = 'Sign up to manage customer jobs and reminders for your workshop.';
+    } else {
+      btnTabSignIn.style.background = '#ffffff';
+      btnTabSignIn.style.color = '#0f766e';
+      btnTabSignIn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.06)';
+      btnTabSignUp.style.background = 'transparent';
+      btnTabSignUp.style.color = '#64748b';
+      btnTabSignUp.style.boxShadow = 'none';
+
+      signInForm.style.display = 'block';
+      signUpForm.style.display = 'none';
+      authModalTitle.textContent = 'Sign in to Job Booking';
+      authModalSubtitle.textContent = 'Welcome back! Enter your email and password to access your jobs.';
+    }
+  }
+
+  function showAuthModal(initialMode = 'signup') {
     authModal.style.display = 'flex';
     userMenuArea.style.display = 'none';
     tabOwner.style.display = 'none';
-    requestCodeForm.style.display = 'block';
-    verifyCodeForm.style.display = 'none';
-    authEmailInput.value = '';
-    authNameInput.value = '';
+    setAuthMode(initialMode);
   }
 
   function applyAuthenticatedState() {
@@ -200,139 +244,140 @@
     localStorage.removeItem(STORAGE_KEYS.USER);
 
     showToast('Signed out successfully.', 'info');
-    showAuthModal();
+    showAuthModal('signin');
   }
 
-  /* Request Email Code */
-  requestCodeForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = authEmailInput.value.trim();
-    const name = authNameInput.value.trim();
+  // Switch tabs in Auth Modal
+  btnTabSignUp.addEventListener('click', () => setAuthMode('signup'));
+  btnTabSignIn.addEventListener('click', () => setAuthMode('signin'));
+  linkSwitchToSignIn.addEventListener('click', () => setAuthMode('signin'));
+  linkSwitchToSignUp.addEventListener('click', () => setAuthMode('signup'));
 
-    if (!email) {
-      showToast('Please enter your email.', 'error');
+  // Terms Modal Handlers
+  linkOpenTerms.addEventListener('click', () => {
+    termsModal.style.display = 'flex';
+  });
+  btnCloseTerms.addEventListener('click', () => {
+    termsModal.style.display = 'none';
+  });
+  btnAcceptTermsClose.addEventListener('click', () => {
+    regAgreeTerms.checked = true;
+    termsModal.style.display = 'none';
+  });
+
+  // SIGN UP (Create Account) Form Submit
+  signUpForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const firstName = regFirstName.value.trim();
+    const lastName = regLastName.value.trim();
+    const email = regEmail.value.trim();
+    const phone = regPhone.value.trim();
+    const password = regPassword.value;
+    const confirmPassword = regConfirmPassword.value;
+    const agreedToTerms = regAgreeTerms.checked;
+
+    if (password !== confirmPassword) {
+      showToast('Passwords do not match. Please verify and re-type.', 'error');
+      regConfirmPassword.focus();
       return;
     }
 
-    const submitBtn = document.getElementById('btnRequestCode');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Sending Code...';
-
-    try {
-      const res = await fetch('/api/auth/request-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send verification code');
-
-      pendingEmail = email;
-      requestCodeForm.style.display = 'none';
-      verifyCodeForm.style.display = 'block';
-      codeSentHelpText.innerHTML = `Code sent to <strong>${escapeHtml(email)}</strong>.`;
-
-      // Show preview code in toast for effortless local testing
-      if (data.previewCode) {
-        showToast(`Verification code is: ${data.previewCode}`, 'success', 10000);
-        authCodeInput.value = data.previewCode;
-      } else {
-        showToast('Verification code generated. Please enter it below.', 'success');
-      }
-
-      authCodeInput.focus();
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Send Sign-in Code';
-    }
-  });
-
-  /* Verify Code */
-  verifyCodeForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const code = authCodeInput.value.trim();
-
-    if (!code) {
-      showToast('Please enter the 6-digit code.', 'error');
+    if (!agreedToTerms) {
+      showToast('Please agree to the Terms & Conditions to create an account.', 'error');
       return;
     }
 
-    const submitBtn = document.getElementById('btnVerifyCode');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Verifying...';
+    btnSubmitSignUp.disabled = true;
+    btnSubmitSignUp.innerHTML = '<span>⏳</span> Creating Account...';
 
     try {
-      const res = await fetch('/api/auth/verify-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: pendingEmail, code })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Verification failed');
-
-      authToken = data.token;
-      currentUser = data.user;
-      localStorage.setItem(STORAGE_KEYS.TOKEN, authToken);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
-
-      showToast(`Welcome, ${currentUser.name}!`, 'success');
-      applyAuthenticatedState();
-    } catch (err) {
-      showToast(err.message, 'error');
-    } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Verify & Sign In';
-    }
-  });
-
-  /* Switch back to email form */
-  btnBackToEmail.addEventListener('click', () => {
-    verifyCodeForm.style.display = 'none';
-    requestCodeForm.style.display = 'block';
-  });
-
-  /* Quick Google Sign In */
-  async function performGoogleSignIn(email, name) {
-    try {
-      const res = await fetch('/api/auth/google', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email,
-          name: name,
-          credential: 'google_token_simulated'
+          firstName,
+          lastName,
+          email,
+          phone,
+          password,
+          confirmPassword,
+          agreedToTerms
         })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Google Sign-In failed');
+      if (!res.ok) throw new Error(data.error || 'Failed to create account');
 
       authToken = data.token;
       currentUser = data.user;
       localStorage.setItem(STORAGE_KEYS.TOKEN, authToken);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
 
-      showToast(`Signed in as ${currentUser.name}!`, 'success');
+      if (currentUser.phone) {
+        localStorage.setItem(STORAGE_KEYS.WORKER_PHONE, currentUser.phone);
+      }
+      if (currentUser.email) {
+        localStorage.setItem(STORAGE_KEYS.NOTIFY_EMAIL, currentUser.email);
+      }
+
+      showToast(`Welcome, ${currentUser.name}! Your account is active.`, 'success');
       applyAuthenticatedState();
+
     } catch (err) {
       showToast(err.message, 'error');
+    } finally {
+      btnSubmitSignUp.disabled = false;
+      btnSubmitSignUp.innerHTML = '<span>📝</span> Create Account';
     }
-  }
-
-  btnGoogleSignIn.addEventListener('click', () => {
-    performGoogleSignIn('worker.trades@gmail.com', 'Nigerian Trades Artisan');
   });
 
-  presetOwnerBtn.addEventListener('click', () => {
-    performGoogleSignIn(OWNER_EMAIL, 'Mofeoluwa Osanyintuyi (Owner)');
-  });
+  // SIGN IN Form Submit
+  signInForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-  presetArtisanBtn.addEventListener('click', () => {
-    performGoogleSignIn('kola.tailor@gmail.com', 'Kolawole Fabrics & Tailors');
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value;
+
+    if (!email || !password) {
+      showToast('Please enter both your email and password.', 'error');
+      return;
+    }
+
+    btnSubmitSignIn.disabled = true;
+    btnSubmitSignIn.innerHTML = '<span>⏳</span> Signing In...';
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Invalid email or password');
+
+      authToken = data.token;
+      currentUser = data.user;
+      localStorage.setItem(STORAGE_KEYS.TOKEN, authToken);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
+
+      if (currentUser.phone) {
+        localStorage.setItem(STORAGE_KEYS.WORKER_PHONE, currentUser.phone);
+      }
+      if (currentUser.email) {
+        localStorage.setItem(STORAGE_KEYS.NOTIFY_EMAIL, currentUser.email);
+      }
+
+      showToast(`Welcome back, ${currentUser.name}!`, 'success');
+      applyAuthenticatedState();
+
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      btnSubmitSignIn.disabled = false;
+      btnSubmitSignIn.innerHTML = '<span>🔐</span> Sign In';
+    }
   });
 
   btnSignOut.addEventListener('click', handleSignOut);

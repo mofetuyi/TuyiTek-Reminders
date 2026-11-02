@@ -1,101 +1,119 @@
 const crypto = require('crypto');
 const db = require('./db');
-
-// In-memory verification code store: email -> { code, expiresAt, name }
-const pendingCodes = new Map();
+const integrations = require('./integrations');
 
 /**
- * Send or generate email verification code
+ * Register a real user account with full credentials
  */
-function requestVerificationCode(email, name) {
+function register({ firstName, lastName, email, phone, password, confirmPassword, agreedToTerms }) {
+  if (!firstName || !firstName.trim()) {
+    throw new Error('First name is required.');
+  }
+  if (!lastName || !lastName.trim()) {
+    throw new Error('Last name is required.');
+  }
   if (!email || !email.includes('@')) {
-    throw new Error('Please enter a valid email address');
+    throw new Error('A valid email address is required.');
+  }
+  if (!phone || !phone.trim()) {
+    throw new Error('Phone number is required.');
+  }
+  if (!password || password.length < 6) {
+    throw new Error('Password must be at least 6 characters long.');
+  }
+  if (password !== confirmPassword) {
+    throw new Error('Password and confirm password do not match.');
+  }
+  if (!agreedToTerms) {
+    throw new Error('You must agree to the Terms and Conditions to create an account.');
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  // 6-digit numeric verification code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+  const normalizedPhone = integrations.normalizeNigerianPhone(phone);
 
-  pendingCodes.set(cleanEmail, {
-    code,
-    expiresAt,
-    name: name ? name.trim() : ''
+  if (!normalizedPhone) {
+    throw new Error('Please enter a valid phone number (e.g. 0803 123 4567).');
+  }
+
+  // Check if account already exists
+  const existing = db.findUserByEmail(cleanEmail);
+  if (existing) {
+    throw new Error('An account with this email already exists. Please sign in instead.');
+  }
+
+  // Hash password with random salt
+  const salt = crypto.randomBytes(16).toString('hex');
+  const passwordHash = db.hashPassword(password, salt);
+
+  const newUser = db.createUser({
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    email: cleanEmail,
+    phone: normalizedPhone,
+    passwordHash,
+    salt
   });
 
-  console.log(`[AUTH] Verification code generated for ${cleanEmail}: ${code}`);
-
-  // In demo/offline mode, we return the code directly so testing is instantaneous without needing external SMTP!
-  return {
-    email: cleanEmail,
-    code, // Helpful for UI auto-fill / preview in developer & demo mode
-    message: 'Verification code generated successfully'
-  };
-}
-
-/**
- * Verify code and create session
- */
-function verifyCode(email, inputCode) {
-  if (!email || !inputCode) {
-    throw new Error('Email and verification code are required');
-  }
-
-  const cleanEmail = email.trim().toLowerCase();
-  const record = pendingCodes.get(cleanEmail);
-
-  // Allow bypass code for quick demo/testing if needed
-  const isMasterCode = inputCode === '123456' || (record && record.code === inputCode.trim());
-
-  if (!record && !isMasterCode) {
-    throw new Error('No pending verification code found for this email. Please request a new code.');
-  }
-
-  if (record && Date.now() > record.expiresAt) {
-    pendingCodes.delete(cleanEmail);
-    throw new Error('Verification code has expired. Please request a new code.');
-  }
-
-  if (!isMasterCode) {
-    throw new Error('Invalid verification code. Please check and try again.');
-  }
-
-  const name = record ? record.name : '';
-  pendingCodes.delete(cleanEmail);
-
-  // Upsert user into database
-  const user = db.upsertUser(cleanEmail, name);
-  const token = db.createSession(user);
+  const token = db.createSession(newUser);
 
   return {
     token,
     user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      isOwner: user.email.toLowerCase() === db.OWNER_EMAIL.toLowerCase()
+      id: newUser.id,
+      firstName: newUser.firstName,
+      lastName: newUser.lastName,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      isOwner: newUser.email.toLowerCase() === db.OWNER_EMAIL.toLowerCase()
     }
   };
 }
 
 /**
- * Quick Google Sign-In / One-click sign-in handler
+ * Sign in an existing user with email and password
  */
-function googleSignIn(email, name, credential) {
-  if (!email || !email.includes('@')) {
-    throw new Error('Valid email required for Google Sign-In');
+function login({ email, password }) {
+  if (!email || !email.trim()) {
+    throw new Error('Email is required.');
+  }
+  if (!password) {
+    throw new Error('Password is required.');
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  const user = db.upsertUser(cleanEmail, name);
+  const user = db.findUserByEmail(cleanEmail);
+
+  if (!user) {
+    throw new Error('Invalid email or password. Please check your credentials.');
+  }
+
+  // Check password hash
+  if (user.passwordHash && user.salt) {
+    const computedHash = db.hashPassword(password, user.salt);
+    if (computedHash !== user.passwordHash) {
+      throw new Error('Invalid email or password. Please check your credentials.');
+    }
+  } else {
+    // If legacy user without password hash, set their password on first sign-in
+    const newSalt = crypto.randomBytes(16).toString('hex');
+    user.salt = newSalt;
+    user.passwordHash = db.hashPassword(password, newSalt);
+    db.save();
+  }
+
+  db.updateUserLogin(user.id);
   const token = db.createSession(user);
 
   return {
     token,
     user: {
       id: user.id,
-      name: user.name,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      name: user.name || user.email,
       email: user.email,
+      phone: user.phone || '',
       isOwner: user.email.toLowerCase() === db.OWNER_EMAIL.toLowerCase()
     }
   };
@@ -131,6 +149,7 @@ function requireAuth(req, res, next) {
     id: session.userId,
     email: session.email,
     name: session.name,
+    phone: session.phone || '',
     isOwner: session.email.toLowerCase() === db.OWNER_EMAIL.toLowerCase()
   };
   req.token = token;
@@ -150,9 +169,8 @@ function requireOwner(req, res, next) {
 }
 
 module.exports = {
-  requestVerificationCode,
-  verifyCode,
-  googleSignIn,
+  register,
+  login,
   requireAuth,
   requireOwner
 };

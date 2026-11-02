@@ -548,105 +548,150 @@
   </main>
 
   <!-- ====================================================================
-       AUTHENTICATION MODAL
-       Public app with required sign-in before using any page or action.
-       Supports:
-       - Email verification code (magic 6-digit code)
-       - Google sign-in (1-click quick sign-in)
+       AUTHENTICATION MODAL (Production Authentication)
+       Real sign up and sign in:
+       - First Name, Last Name, Email, Phone Number, Password, Confirm Password,
+         and Agree to Terms & Conditions.
+       - No demo verification codes.
        ==================================================================== -->
   <div class="modal-backdrop" id="authModal" style="display: none;">
-    <div class="auth-card">
-      <div class="auth-header">
+    <div class="auth-card" style="max-width: 480px; max-height: 90vh; overflow-y: auto;">
+      <div class="auth-header" style="margin-bottom: 16px;">
         <div class="auth-logo" aria-hidden="true">🛠️</div>
-        <h2>Sign in to Job Booking</h2>
-        <p>Fast customer job logging for artisans & small trade workshops in Nigeria.</p>
+        <h2 id="authModalTitle">Create Your Account</h2>
+        <p id="authModalSubtitle">Sign up to manage customer jobs and reminders for your workshop.</p>
       </div>
 
-      <!-- Google Sign In Button -->
-      <button type="button" class="btn-google" id="btnGoogleSignIn">
-        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-        <span>Continue with Google</span>
-      </button>
-
-      <div class="auth-divider">
-        <span>or sign in with email code</span>
+      <!-- Auth Mode Switcher Tabs -->
+      <div class="auth-tab-bar" style="display: flex; gap: 8px; margin-bottom: 18px; background: #f1f5f9; padding: 4px; border-radius: 12px;">
+        <button type="button" class="btn-auth-toggle active" id="btnTabSignUp" style="flex: 1; padding: 9px; border-radius: 8px; border: none; font-weight: 800; font-size: 0.92rem; cursor: pointer; background: #ffffff; color: #0f766e; box-shadow: 0 2px 4px rgba(0,0,0,0.06); font-family: var(--font-family);">
+          Sign Up
+        </button>
+        <button type="button" class="btn-auth-toggle" id="btnTabSignIn" style="flex: 1; padding: 9px; border-radius: 8px; border: none; font-weight: 800; font-size: 0.92rem; cursor: pointer; background: transparent; color: #64748b; font-family: var(--font-family);">
+          Sign In
+        </button>
       </div>
 
-      <!-- Step 1: Enter email to request code -->
-      <form id="requestCodeForm">
+      <!-- FORM 1: SIGN UP (CREATE ACCOUNT) -->
+      <form id="signUpForm">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <!-- First Name -->
+          <div class="form-group">
+            <label class="form-label" for="regFirstName" style="font-size: 0.88rem;">First Name <span class="req">*</span></label>
+            <div class="input-container">
+              <input type="text" class="form-input" id="regFirstName" name="firstName" placeholder="e.g. Kolawole" required style="padding-left: 14px;">
+            </div>
+          </div>
+          <!-- Last Name -->
+          <div class="form-group">
+            <label class="form-label" for="regLastName" style="font-size: 0.88rem;">Last Name <span class="req">*</span></label>
+            <div class="input-container">
+              <input type="text" class="form-input" id="regLastName" name="lastName" placeholder="e.g. Adeleke" required style="padding-left: 14px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Email -->
         <div class="form-group">
-          <label class="form-label" for="authEmail">Your Email Address</label>
+          <label class="form-label" for="regEmail" style="font-size: 0.88rem;">Email Address <span class="req">*</span></label>
           <div class="input-container">
             <span class="field-icon" aria-hidden="true">✉️</span>
-            <input 
-              type="email" 
-              class="form-input" 
-              id="authEmail" 
-              placeholder="e.g. tailor@gmail.com" 
-              required
-            >
+            <input type="email" class="form-input" id="regEmail" name="email" placeholder="your-workshop@gmail.com" required>
           </div>
         </div>
 
-        <div class="form-group" id="nameFieldGroup">
-          <label class="form-label" for="authName">Your Name / Trade Name (Optional)</label>
-          <div class="input-container">
-            <span class="field-icon" aria-hidden="true">👤</span>
-            <input 
-              type="text" 
-              class="form-input" 
-              id="authName" 
-              placeholder="e.g. Kolawole Tailoring"
-            >
-          </div>
-        </div>
-
-        <button type="submit" class="btn-save-job" id="btnRequestCode" style="margin-top: 14px; margin-bottom: 8px; font-size: 1.05rem; padding: 13px;">
-          Send Sign-in Code
-        </button>
-      </form>
-
-      <!-- Step 2: Enter 6-digit code (initially hidden) -->
-      <form id="verifyCodeForm" style="display: none;">
+        <!-- Phone Number -->
         <div class="form-group">
-          <label class="form-label" for="authCode">Enter 6-Digit Code</label>
-          <div class="input-container">
-            <span class="field-icon" aria-hidden="true">🔑</span>
-            <input 
-              type="text" 
-              class="form-input" 
-              id="authCode" 
-              placeholder="e.g. 123456" 
-              maxlength="6" 
-              style="letter-spacing: 4px; font-size: 1.25rem; text-align: center; font-weight: 800;"
-              required
-            >
+          <label class="form-label" for="regPhone" style="font-size: 0.88rem;">Phone Number <span class="req">*</span></label>
+          <div class="phone-input-wrapper">
+            <div class="country-flag-badge">🇳🇬 +234</div>
+            <input type="tel" class="form-input" id="regPhone" name="phone" placeholder="0803 123 4567" required>
           </div>
-          <p class="form-help" id="codeSentHelpText">Code sent to your email.</p>
         </div>
 
-        <button type="submit" class="btn-save-job" id="btnVerifyCode" style="margin-top: 14px; margin-bottom: 8px; font-size: 1.05rem; padding: 13px;">
-          Verify & Sign In
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label" for="regPassword" style="font-size: 0.88rem;">Password <span class="req">*</span></label>
+          <div class="input-container">
+            <span class="field-icon" aria-hidden="true">🔒</span>
+            <input type="password" class="form-input" id="regPassword" name="password" placeholder="At least 6 characters" minlength="6" required>
+          </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label class="form-label" for="regConfirmPassword" style="font-size: 0.88rem;">Confirm Password <span class="req">*</span></label>
+          <div class="input-container">
+            <span class="field-icon" aria-hidden="true">🔐</span>
+            <input type="password" class="form-input" id="regConfirmPassword" name="confirmPassword" placeholder="Repeat your password" minlength="6" required>
+          </div>
+        </div>
+
+        <!-- Agree to Terms and Conditions -->
+        <div class="form-group" style="margin-top: 14px; margin-bottom: 16px;">
+          <label style="display: flex; align-items: flex-start; gap: 8px; font-size: 0.82rem; font-weight: 700; color: #334155; cursor: pointer;">
+            <input type="checkbox" id="regAgreeTerms" required style="width: 18px; height: 18px; margin-top: 2px; accent-color: #0d9488;">
+            <span>I agree to the <a href="javascript:void(0)" id="linkOpenTerms" style="color: #0284c7; text-decoration: underline;">Terms & Conditions</a> and workshop data policy. <span class="req">*</span></span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-save-job" id="btnSubmitSignUp" style="margin-top: 8px; margin-bottom: 12px; font-size: 1.1rem; padding: 14px;">
+          <span>📝</span> Create Account
         </button>
 
-        <button type="button" id="btnBackToEmail" style="width: 100%; background: none; border: none; color: #0284c7; font-size: 0.85rem; font-weight: 800; cursor: pointer; padding: 6px;">
-          ← Use a different email
-        </button>
+        <p style="text-align: center; font-size: 0.85rem; color: #64748b; font-weight: 700;">
+          Already have an account? <a href="javascript:void(0)" id="linkSwitchToSignIn" style="color: #0f766e; text-decoration: underline; font-weight: 800;">Sign In here</a>
+        </p>
       </form>
 
-      <!-- Quick Switch Presets for easy demonstration & testing -->
-      <div class="quick-signin-presets">
-        <p>⚡ Quick Sign-In Presets (Instant Demo)</p>
-        <div class="preset-buttons-row">
-          <button type="button" class="btn-preset" id="presetOwnerBtn" title="Sign in as App Owner">
-            👑 Mofeoluwa (Owner)
-          </button>
-          <button type="button" class="btn-preset" id="presetArtisanBtn" title="Sign in as Artisan Worker">
-            🧵 Tailor / Worker
-          </button>
+      <!-- FORM 2: SIGN IN (LOG IN) -->
+      <form id="signInForm" style="display: none;">
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Email Address <span class="req">*</span></label>
+          <div class="input-container">
+            <span class="field-icon" aria-hidden="true">✉️</span>
+            <input type="email" class="form-input" id="loginEmail" name="email" placeholder="your-email@gmail.com" required>
+          </div>
         </div>
-      </div>
 
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Password <span class="req">*</span></label>
+          <div class="input-container">
+            <span class="field-icon" aria-hidden="true">🔒</span>
+            <input type="password" class="form-input" id="loginPassword" name="password" placeholder="Enter your password" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-save-job" id="btnSubmitSignIn" style="margin-top: 18px; margin-bottom: 14px; font-size: 1.1rem; padding: 14px;">
+          <span>🔐</span> Sign In
+        </button>
+
+        <p style="text-align: center; font-size: 0.85rem; color: #64748b; font-weight: 700;">
+          Don't have an account yet? <a href="javascript:void(0)" id="linkSwitchToSignUp" style="color: #0f766e; text-decoration: underline; font-weight: 800;">Create Account</a>
+        </p>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- TERMS AND CONDITIONS MODAL -->
+  <div class="modal-backdrop" id="termsModal" style="display: none; z-index: 1100;">
+    <div class="auth-card" style="max-width: 520px; max-height: 80vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+        <h3 style="font-size: 1.2rem; font-weight: 900; color: #0f172a;">Terms & Conditions</h3>
+        <button type="button" id="btnCloseTerms" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; font-weight: bold; color: #64748b;">✕</button>
+      </div>
+      <div style="font-size: 0.86rem; color: #334155; line-height: 1.6;">
+        <p><strong>1. Use of Job Booking:</strong> This service is designed for Nigerian small trade businesses (tailors, carpenters, mechanics, and handiworkers) to log customer items and schedule pick-up reminders.</p>
+        <p style="margin-top: 8px;"><strong>2. Privacy & Customer Data:</strong> Customer contact details logged into this application are stored for the sole purpose of workshop records and collection reminders.</p>
+        <p style="margin-top: 8px;"><strong>3. Automated Reminders:</strong> Reminders will be queued and sent 5, 3, and 1 day prior to customer collection dates as configured.</p>
+        <p style="margin-top: 8px;"><strong>4. Account Security:</strong> You are responsible for keeping your login credentials confidential.</p>
+      </div>
+      <button type="button" class="btn-save-settings" id="btnAcceptTermsClose" style="width: 100%; margin-top: 16px; justify-content: center;">
+        I Understand & Agree
+      </button>
     </div>
   </div>
 

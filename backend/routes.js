@@ -31,41 +31,22 @@ function getDaysLeft(collectionDateStr) {
 }
 
 /* ==========================================================================
-   PUBLIC AUTH ROUTES
+   PUBLIC AUTH ROUTES (Production Authentication)
+   Sign up requires: First Name, Last Name, Email, Phone, Password,
+   Confirm Password, and Agreement to Terms & Conditions.
    ========================================================================== */
 
 /**
- * Request an email verification code (Magic 6-digit code)
+ * Register a new worker/artisan account
  */
-router.post('/auth/request-code', async (req, res) => {
+router.post('/auth/register', (req, res) => {
   try {
-    const { email, name } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Please enter your email address' });
-    }
-    const result = auth.requestVerificationCode(email, name);
-
-    // Asynchronously send to Zapier/n8n Auth Webhook if configured
-    const settings = db.getSettings();
-    const webhookTarget = settings.auth_webhook_url || settings.zapier_webhook_url;
-    if (webhookTarget && webhookTarget.trim()) {
-      integrations.sendWebhook(webhookTarget.trim(), {
-        event: 'auth_verification_code',
-        email: result.email,
-        name: name || '',
-        code: result.code,
-        expires_in_minutes: 15,
-        app_name: 'Job Booking',
-        created_at: new Date().toISOString()
-      }).then(r => console.log('[AUTH WEBHOOK] Code dispatched:', r.statusCode || r.skipped))
-        .catch(e => console.warn('[AUTH WEBHOOK] Dispatch error:', e.message));
-    }
-
+    const result = auth.register(req.body);
     res.json({
       success: true,
-      message: 'Verification code generated! Please check your email.',
-      previewCode: result.code, // Returned for instant demo testing
-      email: result.email
+      message: 'Account created successfully! Welcome to Job Booking.',
+      token: result.token,
+      user: result.user
     });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -73,17 +54,14 @@ router.post('/auth/request-code', async (req, res) => {
 });
 
 /**
- * Verify 6-digit email code
+ * Sign in existing user with email and password
  */
-router.post('/auth/verify-code', (req, res) => {
+router.post('/auth/login', (req, res) => {
   try {
-    const { email, code } = req.body;
-    if (!email || !code) {
-      return res.status(400).json({ error: 'Email and verification code are required' });
-    }
-    const result = auth.verifyCode(email, code);
+    const result = auth.login(req.body);
     res.json({
       success: true,
+      message: 'Signed in successfully!',
       token: result.token,
       user: result.user
     });

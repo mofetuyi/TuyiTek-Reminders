@@ -7,6 +7,10 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 const OWNER_EMAIL = 'osanyintuyimofeoluwa@gmail.com';
 
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString('hex');
+}
+
 class Database {
   constructor() {
     this.data = null;
@@ -36,7 +40,6 @@ class Database {
   getDefaultData() {
     const today = new Date();
     
-    // Seed some initial dates
     const dateDueTomorrow = new Date(today);
     dateDueTomorrow.setDate(today.getDate() + 1);
     
@@ -48,10 +51,14 @@ class Database {
 
     const formatDate = (d) => d.toISOString().split('T')[0];
 
+    const defaultSalt = 'd8f49b109e4f2a7c88b0123456789abc';
+    const defaultHash = hashPassword('Admin@123', defaultSalt);
+
     return {
       app_settings: {
         id: 1,
         zapier_webhook_url: '',
+        auth_webhook_url: '',
         google_sheet_id: '15oZab-gF3dFCInkIS49tRTF7jvErmvMcqC3-5T0eHX0',
         google_sheet_tab: 'Form responses 1',
         google_apps_script_url: '',
@@ -60,24 +67,16 @@ class Database {
       users: [
         {
           id: 'usr_owner_001',
+          firstName: 'Mofeoluwa',
+          lastName: 'Osanyintuyi',
           name: 'Mofeoluwa Osanyintuyi',
           email: OWNER_EMAIL,
+          phone: '+2348140009988',
+          passwordHash: defaultHash,
+          salt: defaultSalt,
+          agreedToTerms: true,
           created_at: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
           last_login: new Date().toISOString()
-        },
-        {
-          id: 'usr_artisan_002',
-          name: 'Alhaji Ibrahim (Master Tailor)',
-          email: 'ibrahim.stitches@gmail.com',
-          created_at: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString(),
-          last_login: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString()
-        },
-        {
-          id: 'usr_artisan_003',
-          name: 'Sunday Okafor (Autocare)',
-          email: 'sunday.mechanic@yahoo.com',
-          created_at: new Date(Date.now() - 5 * 24 * 3600 * 1000).toISOString(),
-          last_login: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString()
         }
       ],
       jobs: [
@@ -140,7 +139,7 @@ class Database {
 
   // Settings
   getSettings() {
-    return this.data.app_settings;
+    return this.data.app_settings || {};
   }
 
   updateSettings(settings) {
@@ -155,10 +154,13 @@ class Database {
 
   // Users
   getUsers() {
-    return this.data.users.map(u => ({
+    return (this.data.users || []).map(u => ({
       id: u.id,
-      name: u.name,
+      firstName: u.firstName || '',
+      lastName: u.lastName || '',
+      name: u.name || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
       email: u.email,
+      phone: u.phone || '',
       created_at: u.created_at,
       last_login: u.last_login
     }));
@@ -167,41 +169,53 @@ class Database {
   findUserByEmail(email) {
     if (!email) return null;
     const clean = email.trim().toLowerCase();
-    return this.data.users.find(u => u.email.toLowerCase() === clean) || null;
+    return (this.data.users || []).find(u => u.email.toLowerCase() === clean) || null;
   }
 
-  upsertUser(email, name) {
+  createUser({ firstName, lastName, email, phone, passwordHash, salt }) {
     const cleanEmail = email.trim().toLowerCase();
-    let user = this.findUserByEmail(cleanEmail);
     const now = new Date().toISOString();
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
 
-    if (!user) {
-      user = {
-        id: 'usr_' + crypto.randomBytes(6).toString('hex'),
-        name: (name || cleanEmail.split('@')[0]).trim(),
-        email: cleanEmail,
-        created_at: now,
-        last_login: now
-      };
-      this.data.users.push(user);
-    } else {
-      user.last_login = now;
-      if (name && name.trim()) {
-        user.name = name.trim();
-      }
-    }
+    const newUser = {
+      id: 'usr_' + crypto.randomBytes(6).toString('hex'),
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      name: fullName,
+      email: cleanEmail,
+      phone: phone.trim(),
+      passwordHash,
+      salt,
+      agreedToTerms: true,
+      created_at: now,
+      last_login: now
+    };
+
+    if (!this.data.users) this.data.users = [];
+    this.data.users.push(newUser);
     this.save();
-    return user;
+    return newUser;
+  }
+
+  updateUserLogin(userId) {
+    const user = (this.data.users || []).find(u => u.id === userId);
+    if (user) {
+      user.last_login = new Date().toISOString();
+      this.save();
+    }
   }
 
   // Sessions
   createSession(user) {
     const token = 'tok_' + crypto.randomBytes(24).toString('hex');
     const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+    if (!this.data.sessions) this.data.sessions = {};
+    
     this.data.sessions[token] = {
       userId: user.id,
       email: user.email,
-      name: user.name,
+      name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      phone: user.phone || '',
       expiresAt
     };
     this.save();
@@ -209,7 +223,7 @@ class Database {
   }
 
   getSession(token) {
-    if (!token) return null;
+    if (!token || !this.data.sessions) return null;
     const session = this.data.sessions[token];
     if (!session) return null;
     if (Date.now() > session.expiresAt) {
@@ -221,7 +235,7 @@ class Database {
   }
 
   deleteSession(token) {
-    if (token && this.data.sessions[token]) {
+    if (token && this.data.sessions && this.data.sessions[token]) {
       delete this.data.sessions[token];
       this.save();
     }
@@ -229,8 +243,7 @@ class Database {
 
   // Jobs
   getJobs() {
-    // Return all jobs sorted by Collection Date with the nearest first
-    return [...this.data.jobs].sort((a, b) => {
+    return [...(this.data.jobs || [])].sort((a, b) => {
       const dateA = new Date(a['Collection Date'] || '9999-12-31').getTime();
       const dateB = new Date(b['Collection Date'] || '9999-12-31').getTime();
       return dateA - dateB;
@@ -253,6 +266,7 @@ class Database {
       created_by_user_id: userId || 'anonymous'
     };
 
+    if (!this.data.jobs) this.data.jobs = [];
     this.data.jobs.push(newJob);
     this.save();
     return newJob;
@@ -261,3 +275,4 @@ class Database {
 
 module.exports = new Database();
 module.exports.OWNER_EMAIL = OWNER_EMAIL;
+module.exports.hashPassword = hashPassword;

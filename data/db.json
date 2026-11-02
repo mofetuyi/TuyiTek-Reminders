@@ -5,7 +5,7 @@
     "google_sheet_id": "15oZab-gF3dFCInkIS49tRTF7jvErmvMcqC3-5T0eHX0",
     "google_sheet_tab": "Form responses 1",
     "google_apps_script_url": "",
-    "updated_at": "2026-11-02T09:30:35.525Z",
+    "updated_at": "2026-11-02T09:54:27.308Z",
     "auth_webhook_url": ""
   },
   "users": [
@@ -14,7 +14,9 @@
       "name": "Mofeoluwa Osanyintuyi",
       "email": "osanyintuyimofeoluwa@gmail.com",
       "created_at": "2026-10-03T09:10:43.371Z",
-      "last_login": "2026-11-02T09:30:35.490Z"
+      "last_login": "2026-11-02T09:54:27.290Z",
+      "salt": "f0e6041424d4ed4c0adb9db0f6906eff",
+      "passwordHash": "764e8f0616993ae9433bf523666dacde2f505676c78d1f178904de6df1fddcca037442a719b24eca486ed047c8b5c563ea4ff12355d5f77eae3aba6b633a4e92"
     },
     {
       "id": "usr_artisan_002",
@@ -35,7 +37,20 @@
       "name": "Kolawole Stitches",
       "email": "test.tailor@example.com",
       "created_at": "2026-11-02T09:10:53.533Z",
-      "last_login": "2026-11-02T09:30:35.340Z"
+      "last_login": "2026-11-02T09:36:43.763Z"
+    },
+    {
+      "id": "usr_82ff0719c919",
+      "firstName": "Babatunde",
+      "lastName": "Fashola",
+      "name": "Babatunde Fashola",
+      "email": "artisan_1793613266908@example.com",
+      "phone": "+2348141112233",
+      "passwordHash": "f8c59992a20d85f8ff219e0c544cd327cbf07a078df2419ac6802cc402596428ed00228761245719f60781d9b1e1c82381e4951cd550de5faec5d2dfb03ac41f",
+      "salt": "7de07a1be8bc34241f781ee6927e1326",
+      "agreedToTerms": true,
+      "created_at": "2026-11-02T09:54:27.014Z",
+      "last_login": "2026-11-02T09:54:27.073Z"
     }
   ],
   "jobs": [
@@ -150,6 +165,34 @@
       "Last Reminder": "",
       "created_at": "2026-11-02T09:30:35.507Z",
       "created_by_user_id": "usr_2612853529cb"
+    },
+    {
+      "id": "job_07ed304fadc0",
+      "Customer Name": "Babatunde Fashola",
+      "Customer Phone": "+2348023456789",
+      "Worker Phone": "+2348141112233",
+      "Item / Job": "Senator Suit 3-Piece Navy Blue",
+      "Job Details": "Italian wool, gold buttons, extra sleeve length",
+      "Collection Date": "2026-11-04",
+      "Notify Email": "babatunde.workshop@gmail.com",
+      "Business Name": "Lagos Heritage Tailors",
+      "Last Reminder": "",
+      "created_at": "2026-11-02T09:36:43.884Z",
+      "created_by_user_id": "usr_2612853529cb"
+    },
+    {
+      "id": "job_cd4c1e65f00f",
+      "Customer Name": "Babatunde Fashola",
+      "Customer Phone": "+2348023456789",
+      "Worker Phone": "+2348141112233",
+      "Item / Job": "Senator Suit 3-Piece Navy Blue",
+      "Job Details": "Italian wool, gold buttons, extra sleeve length",
+      "Collection Date": "2026-11-04",
+      "Notify Email": "babatunde.workshop@gmail.com",
+      "Business Name": "Lagos Heritage Tailors",
+      "Last Reminder": "",
+      "created_at": "2026-11-02T09:54:27.298Z",
+      "created_by_user_id": "usr_82ff0719c919"
     }
   ],
   "sessions": {
@@ -212,6 +255,39 @@
       "email": "osanyintuyimofeoluwa@gmail.com",
       "name": "Mofeoluwa Osanyintuyi",
       "expiresAt": 1796203835494
+    },
+    "tok_255855007715771d6eb5c88383bf6468d039d6ba43a7b45c": {
+      "userId": "usr_2612853529cb",
+      "email": "test.tailor@example.com",
+      "name": "Kolawole Stitches",
+      "expiresAt": 1796204203770
+    },
+    "tok_ff7d45faa1be56e33359be4d53690a80c0dc6a373cfa1971": {
+      "userId": "usr_owner_001",
+      "email": "osanyintuyimofeoluwa@gmail.com",
+      "name": "Mofeoluwa Osanyintuyi",
+      "expiresAt": 1796204203876
+    },
+    "tok_888de98cc862920814ba2f12530238bfb3be774d7f62c26e": {
+      "userId": "usr_82ff0719c919",
+      "email": "artisan_1793613266908@example.com",
+      "name": "Babatunde Fashola",
+      "phone": "+2348141112233",
+      "expiresAt": 1796205267016
+    },
+    "tok_c40250eafbeb543f4f67352f2906cc46e9ad47bc2624cdf3": {
+      "userId": "usr_82ff0719c919",
+      "email": "artisan_1793613266908@example.com",
+      "name": "Babatunde Fashola",
+      "phone": "+2348141112233",
+      "expiresAt": 1796205267075
+    },
+    "tok_f7e3cb435ab507a449cbc2ed793b2c889b1bd7cfa45e2166": {
+      "userId": "usr_owner_001",
+      "email": "osanyintuyimofeoluwa@gmail.com",
+      "name": "Mofeoluwa Osanyintuyi",
+      "phone": "",
+      "expiresAt": 1796205267292
     }
   }
 }
