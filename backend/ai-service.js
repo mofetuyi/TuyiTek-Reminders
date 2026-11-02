@@ -2,7 +2,12 @@ const https = require('https');
 
 class TradeAIService {
   constructor() {
-    this.models = ['gemini-3-flash-preview', 'gemma-4-26b-a4b-it'];
+    this.models = [
+      'gemini-3.5-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-flash-lite-latest',
+      'gemini-3.1-flash-lite'
+    ];
   }
 
   getApiKey() {
