@@ -1,0 +1,164 @@
+{
+  "app_settings": {
+    "id": 1,
+    "zapier_webhook_url": "",
+    "google_sheet_id": "15oZab-gF3dFCInkIS49tRTF7jvErmvMcqC3-5T0eHX0",
+    "google_sheet_tab": "Form responses 1",
+    "google_apps_script_url": "",
+    "updated_at": "2026-11-02T09:11:54.289Z"
+  },
+  "users": [
+    {
+      "id": "usr_owner_001",
+      "name": "Mofeoluwa Osanyintuyi",
+      "email": "osanyintuyimofeoluwa@gmail.com",
+      "created_at": "2026-10-03T09:10:43.371Z",
+      "last_login": "2026-11-02T09:11:54.274Z"
+    },
+    {
+      "id": "usr_artisan_002",
+      "name": "Alhaji Ibrahim (Master Tailor)",
+      "email": "ibrahim.stitches@gmail.com",
+      "created_at": "2026-10-23T09:10:43.371Z",
+      "last_login": "2026-10-31T09:10:43.371Z"
+    },
+    {
+      "id": "usr_artisan_003",
+      "name": "Sunday Okafor (Autocare)",
+      "email": "sunday.mechanic@yahoo.com",
+      "created_at": "2026-10-28T09:10:43.371Z",
+      "last_login": "2026-11-01T09:10:43.371Z"
+    },
+    {
+      "id": "usr_2612853529cb",
+      "name": "Kolawole Stitches",
+      "email": "test.tailor@example.com",
+      "created_at": "2026-11-02T09:10:53.533Z",
+      "last_login": "2026-11-02T09:11:54.154Z"
+    }
+  ],
+  "jobs": [
+    {
+      "id": "job_001",
+      "Customer Name": "Folashade Adeleke",
+      "Customer Phone": "+2348091112233",
+      "Worker Phone": "+2348140009988",
+      "Item / Job": "Ankara gown with beaded embroidery",
+      "Job Details": "Full length flared gown, teal lace trims, chest 38, waist 32, ready for Saturday wedding.",
+      "Collection Date": "2026-11-03",
+      "Notify Email": "osanyintuyimofeoluwa@gmail.com",
+      "Business Name": "StitchPerfect Tailoring",
+      "Last Reminder": "",
+      "created_at": "2026-10-30T09:10:43.371Z",
+      "created_by_user_id": "usr_owner_001"
+    },
+    {
+      "id": "job_002",
+      "Customer Name": "Chinedu Okeke",
+      "Customer Phone": "+2348035551234",
+      "Worker Phone": "+2348029988776",
+      "Item / Job": "Toyota Camry - Brake pads & suspension servicing",
+      "Job Details": "Replace front brake discs, balance tires, shock absorber bushing inspection.",
+      "Collection Date": "2026-11-04",
+      "Notify Email": "osanyintuyimofeoluwa@gmail.com",
+      "Business Name": "TuyiTek Premier Mechanics",
+      "Last Reminder": "",
+      "created_at": "2026-10-31T09:10:43.371Z",
+      "created_by_user_id": "usr_owner_001"
+    },
+    {
+      "id": "job_003",
+      "Customer Name": "Amina Bello",
+      "Customer Phone": "+2348023334455",
+      "Worker Phone": "+2348140009988",
+      "Item / Job": "6-seater mahogany dining table",
+      "Job Details": "Polished dark walnut gloss, carved legs, matching 6 chairs with cream cushions.",
+      "Collection Date": "2026-11-09",
+      "Notify Email": "osanyintuyimofeoluwa@gmail.com",
+      "Business Name": "Crown Artisans Woodcraft",
+      "Last Reminder": "",
+      "created_at": "2026-11-01T09:10:43.371Z",
+      "created_by_user_id": "usr_owner_001"
+    },
+    {
+      "id": "job_81ff426c4cce",
+      "Customer Name": "Babatunde Fashola",
+      "Customer Phone": "+2348023456789",
+      "Worker Phone": "+2348141112233",
+      "Item / Job": "Senator Suit 3-Piece Navy Blue",
+      "Job Details": "Italian wool, gold buttons, extra sleeve length",
+      "Collection Date": "2026-11-04",
+      "Notify Email": "babatunde.workshop@gmail.com",
+      "Business Name": "Lagos Heritage Tailors",
+      "Last Reminder": "",
+      "created_at": "2026-11-02T09:10:53.650Z",
+      "created_by_user_id": "usr_2612853529cb"
+    },
+    {
+      "id": "job_c215459aff31",
+      "Customer Name": "Babatunde Fashola",
+      "Customer Phone": "+2348023456789",
+      "Worker Phone": "+2348141112233",
+      "Item / Job": "Senator Suit 3-Piece Navy Blue",
+      "Job Details": "Italian wool, gold buttons, extra sleeve length",
+      "Collection Date": "2026-11-04",
+      "Notify Email": "babatunde.workshop@gmail.com",
+      "Business Name": "Lagos Heritage Tailors",
+      "Last Reminder": "",
+      "created_at": "2026-11-02T09:11:05.367Z",
+      "created_by_user_id": "usr_2612853529cb"
+    },
+    {
+      "id": "job_385090db5b61",
+      "Customer Name": "Babatunde Fashola",
+      "Customer Phone": "+2348023456789",
+      "Worker Phone": "+2348141112233",
+      "Item / Job": "Senator Suit 3-Piece Navy Blue",
+      "Job Details": "Italian wool, gold buttons, extra sleeve length",
+      "Collection Date": "2026-11-04",
+      "Notify Email": "babatunde.workshop@gmail.com",
+      "Business Name": "Lagos Heritage Tailors",
+      "Last Reminder": "",
+      "created_at": "2026-11-02T09:11:54.281Z",
+      "created_by_user_id": "usr_2612853529cb"
+    }
+  ],
+  "sessions": {
+    "tok_1b0f5b8ae4882c574f80056afa7b439c541f4a4bf81d15c7": {
+      "userId": "usr_2612853529cb",
+      "email": "test.tailor@example.com",
+      "name": "Kolawole Stitches",
+      "expiresAt": 1796202653542
+    },
+    "tok_31cb6c0826bdb65e9655ec8c9ab258b34066206a9988d9ec": {
+      "userId": "usr_owner_001",
+      "email": "osanyintuyimofeoluwa@gmail.com",
+      "name": "Mofeoluwa Osanyintuyi",
+      "expiresAt": 1796202653645
+    },
+    "tok_76cb8b7b193f5f70807e9764d3c75d1aedf01265355224d5": {
+      "userId": "usr_2612853529cb",
+      "email": "test.tailor@example.com",
+      "name": "Kolawole Stitches",
+      "expiresAt": 1796202665331
+    },
+    "tok_43e9c7ab388e35b7e1139276887b625b972553d06d791b80": {
+      "userId": "usr_owner_001",
+      "email": "osanyintuyimofeoluwa@gmail.com",
+      "name": "Mofeoluwa Osanyintuyi",
+      "expiresAt": 1796202665362
+    },
+    "tok_8574dfcab9096b2201a798143a8dba2c97cfbc54c17845ba": {
+      "userId": "usr_2612853529cb",
+      "email": "test.tailor@example.com",
+      "name": "Kolawole Stitches",
+      "expiresAt": 1796202714169
+    },
+    "tok_d71bc518b21ea80a869273e4273e173a7a437a77ea55dbac": {
+      "userId": "usr_owner_001",
+      "email": "osanyintuyimofeoluwa@gmail.com",
+      "name": "Mofeoluwa Osanyintuyi",
+      "expiresAt": 1796202714275
+    }
+  }
+}
