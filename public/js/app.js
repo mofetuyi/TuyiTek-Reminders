@@ -151,14 +151,34 @@
         authToken = savedToken;
         currentUser = JSON.parse(savedUserJson);
         applyAuthenticatedState();
+
+        // Verify session status with server
+        fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        }).then(res => {
+          if (res.status === 401) {
+            handleSignOut('Your session has expired. Please sign in again.');
+          } else if (res.ok) {
+            return res.json().then(data => {
+              if (data && data.user) {
+                currentUser = data.user;
+                localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(currentUser));
+                applyAuthenticatedState();
+              }
+            });
+          }
+        }).catch(err => {
+          console.warn('Session verification error:', err.message);
+        });
+
         return;
       } catch (e) {
         console.error('Failed to parse saved user:', e);
       }
     }
 
-    // Otherwise show auth modal
-    showAuthModal();
+    // Otherwise show auth modal in sign in mode
+    showAuthModal('signin');
   }
 
   function setAuthMode(mode) {
@@ -189,7 +209,7 @@
     }
   }
 
-  function showAuthModal(initialMode = 'signup') {
+  function showAuthModal(initialMode = 'signin') {
     authModal.style.display = 'flex';
     userMenuArea.style.display = 'none';
     tabOwner.style.display = 'none';
@@ -230,7 +250,7 @@
     }
   }
 
-  function handleSignOut() {
+  function handleSignOut(customMessage = null) {
     if (authToken) {
       fetch('/api/auth/signout', {
         method: 'POST',
@@ -243,7 +263,7 @@
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
 
-    showToast('Signed out successfully.', 'info');
+    showToast(customMessage || 'Signed out successfully.', 'info');
     showAuthModal('signin');
   }
 
@@ -1091,6 +1111,14 @@
           trade: currentTradeFilter
         })
       });
+
+      if (res.status === 401) {
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+        chatHistory.pop();
+        handleSignOut('Your session expired or was reset. Please sign in again.');
+        return;
+      }
 
       const data = await res.json();
       const typingEl = document.getElementById(typingId);

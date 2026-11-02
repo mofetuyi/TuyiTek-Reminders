@@ -2,6 +2,68 @@ const crypto = require('crypto');
 const db = require('./db');
 const integrations = require('./integrations');
 
+const SESSION_SECRET = process.env.SESSION_SECRET || 'job_booking_tuyitek_secret_key_2026_lagos';
+
+/**
+ * Generate a cryptographically signed stateless token.
+ * Survives container restarts, re-deploys on Render, and load balancers.
+ */
+function generateSessionToken(user) {
+  const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
+  const payload = `${user.id}:${user.email}:${expiresAt}`;
+  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+  return Buffer.from(payload).toString('base64url') + '.' + sig;
+}
+
+/**
+ * Verify a session token statelessly using HMAC signature
+ */
+function verifySessionToken(token) {
+  if (!token) return null;
+
+  // 1. Check database fallback
+  const dbSession = db.getSession(token);
+  if (dbSession) {
+    return {
+      userId: dbSession.userId,
+      email: dbSession.email,
+      name: dbSession.name,
+      phone: dbSession.phone || '',
+      isOwner: dbSession.email.toLowerCase() === db.OWNER_EMAIL.toLowerCase()
+    };
+  }
+
+  // 2. Stateless HMAC check
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+
+  try {
+    const payload = Buffer.from(parts[0], 'base64url').toString('utf8');
+    const [userId, email, expiresAtStr] = payload.split(':');
+    if (!userId || !email || !expiresAtStr) return null;
+
+    const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+    if (parts[1] !== expectedSig) return null;
+
+    const expiresAt = Number(expiresAtStr);
+    if (Date.now() > expiresAt) return null;
+
+    // Resolve user details
+    const existingUser = db.findUserByEmail(email);
+    const fullName = existingUser?.name || (existingUser?.firstName ? `${existingUser.firstName} ${existingUser.lastName}`.trim() : email.split('@')[0]);
+
+    return {
+      userId: existingUser?.id || userId,
+      email: (existingUser?.email || email).toLowerCase(),
+      name: fullName,
+      phone: existingUser?.phone || '',
+      isOwner: (existingUser?.email || email).toLowerCase() === db.OWNER_EMAIL.toLowerCase()
+    };
+  } catch (err) {
+    return null;
+  }
+}
+
 /**
  * Register a real user account with full credentials
  */
@@ -54,7 +116,7 @@ function register({ firstName, lastName, email, phone, password, confirmPassword
     salt
   });
 
-  const token = db.createSession(newUser);
+  const token = generateSessionToken(newUser);
 
   return {
     token,
@@ -95,7 +157,7 @@ function login({ email, password }) {
       throw new Error('Invalid email or password. Please check your credentials.');
     }
   } else {
-    // If legacy user without password hash, set their password on first sign-in
+    // If seed user without password hash, initialize their password
     const newSalt = crypto.randomBytes(16).toString('hex');
     user.salt = newSalt;
     user.passwordHash = db.hashPassword(password, newSalt);
@@ -103,7 +165,7 @@ function login({ email, password }) {
   }
 
   db.updateUserLogin(user.id);
-  const token = db.createSession(user);
+  const token = generateSessionToken(user);
 
   return {
     token,
@@ -138,7 +200,7 @@ function requireAuth(req, res, next) {
     });
   }
 
-  const session = db.getSession(token);
+  const session = verifySessionToken(token);
   if (!session) {
     return res.status(401).json({
       error: 'Session expired or invalid. Please sign in again.'
@@ -150,7 +212,7 @@ function requireAuth(req, res, next) {
     email: session.email,
     name: session.name,
     phone: session.phone || '',
-    isOwner: session.email.toLowerCase() === db.OWNER_EMAIL.toLowerCase()
+    isOwner: session.isOwner
   };
   req.token = token;
   next();
@@ -171,6 +233,8 @@ function requireOwner(req, res, next) {
 module.exports = {
   register,
   login,
+  generateSessionToken,
+  verifySessionToken,
   requireAuth,
   requireOwner
 };
