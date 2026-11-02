@@ -296,16 +296,21 @@
         <p>Live list of all customer bookings, sorted with nearest collection date first.</p>
       </div>
 
-      <!-- Real-time search box -->
-      <div class="search-box-card">
-        <span class="search-icon" aria-hidden="true">🔍</span>
-        <input 
-          type="text" 
-          class="search-input" 
-          id="jobSearchInput" 
-          placeholder="Search by customer name..."
-          autocomplete="off"
-        >
+      <!-- Real-time search box & Export Button -->
+      <div style="display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;">
+        <div class="search-box-card" style="flex: 1; margin-bottom: 0; min-width: 240px;">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input 
+            type="text" 
+            class="search-input" 
+            id="jobSearchInput" 
+            placeholder="Search by customer name..."
+            autocomplete="off"
+          >
+        </div>
+        <button type="button" class="btn-export-csv" id="btnExportCsv" style="background: #10b981; color: #ffffff; border: none; padding: 12px 18px; border-radius: var(--radius-md); font-weight: 800; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: var(--font-family); box-shadow: var(--shadow-sm); transition: transform 0.15s ease;">
+          <span>📊</span> Export to Sheets (CSV)
+        </button>
       </div>
 
       <!-- Jobs List Container -->

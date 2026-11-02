@@ -717,6 +717,61 @@
     renderJobsList(filtered);
   });
 
+  // 1-Click Export to Google Sheets (CSV)
+  const btnExportCsv = document.getElementById('btnExportCsv');
+  if (btnExportCsv) {
+    btnExportCsv.addEventListener('click', () => {
+      if (!cachedJobs || cachedJobs.length === 0) {
+        showToast('No jobs available to export yet.', 'info');
+        return;
+      }
+
+      const headers = [
+        'Customer Name',
+        'Customer Phone',
+        'Item / Job',
+        'Job Details',
+        'Collection Date',
+        'Notify Email',
+        'Worker Phone',
+        'Business Name',
+        'Last Reminder'
+      ];
+
+      const escapeCsv = (val) => {
+        const str = String(val === undefined || val === null ? '' : val);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      const rows = cachedJobs.map(job => [
+        escapeCsv(job['Customer Name']),
+        escapeCsv(job['Customer Phone']),
+        escapeCsv(job['Item / Job']),
+        escapeCsv(job['Job Details']),
+        escapeCsv(job['Collection Date']),
+        escapeCsv(job['Notify Email']),
+        escapeCsv(job['Worker Phone']),
+        escapeCsv(job['Business Name']),
+        '' // Last Reminder strictly empty
+      ].join(','));
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `TuyiTek_Job_Bookings_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showToast('Exported jobs to CSV for Google Sheets!', 'success');
+    });
+  }
+
 
   /* ========================================================================
      PAGE 3: OWNER DASHBOARD

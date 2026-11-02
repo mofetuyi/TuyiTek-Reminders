@@ -123,8 +123,89 @@ function sendWebhook(targetUrl, payload, redirects = 5) {
   });
 }
 
+const GOOGLE_FORM_ACTION_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSd-xFLwiwMW6WqaRZE7fgX_qeHfOYUtxIcbbY_KjtG4axM1SA/formResponse';
+
+const GOOGLE_FORM_FIELD_MAP = {
+  customerName: 'entry.873462855',
+  customerPhone: 'entry.309071233',
+  workerPhone: 'entry.1660459489',
+  itemJob: 'entry.699553298',
+  jobDetails: 'entry.922852429',
+  collectionDate: 'entry.832432778',
+  notifyEmail: 'entry.135128838',
+  businessName: 'entry.1318290585'
+};
+
 /**
- * Send new job to Zapier webhook and optional Google Sheets webhook
+ * Submits the job directly to the Google Form linked to "job reminder (Responses)".
+ * This instantly writes the row into the Google Sheet "Form responses 1" tab without any webhook!
+ */
+function submitToGoogleForm(job) {
+  return new Promise((resolve) => {
+    try {
+      const querystring = require('querystring');
+      const formData = {
+        [GOOGLE_FORM_FIELD_MAP.customerName]: job['Customer Name'] || '',
+        [GOOGLE_FORM_FIELD_MAP.customerPhone]: job['Customer Phone'] || '',
+        [GOOGLE_FORM_FIELD_MAP.workerPhone]: job['Worker Phone'] || '',
+        [GOOGLE_FORM_FIELD_MAP.itemJob]: job['Item / Job'] || '',
+        [GOOGLE_FORM_FIELD_MAP.jobDetails]: job['Job Details'] || '',
+        [GOOGLE_FORM_FIELD_MAP.collectionDate]: job['Collection Date'] || '',
+        [GOOGLE_FORM_FIELD_MAP.notifyEmail]: job['Notify Email'] || '',
+        [GOOGLE_FORM_FIELD_MAP.businessName]: job['Business Name'] || ''
+      };
+
+      const postData = querystring.stringify(formData);
+      const parsedUrl = new URL(GOOGLE_FORM_ACTION_URL);
+
+      const options = {
+        hostname: parsedUrl.hostname,
+        port: 443,
+        path: parsedUrl.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(postData),
+          'User-Agent': 'JobBookingApp-DirectGoogleSheets/1.0'
+        },
+        timeout: 12000
+      };
+
+      const req = https.request(options, (res) => {
+        let body = '';
+        res.on('data', chunk => { body += chunk; });
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 400) {
+            console.log(`[GOOGLE SHEETS] Successfully synced job ${job.id} directly to Google Sheet! Status: ${res.statusCode}`);
+            resolve({ success: true, statusCode: res.statusCode });
+          } else {
+            console.warn(`[GOOGLE SHEETS] Google Form responded with status ${res.statusCode}`);
+            resolve({ success: false, statusCode: res.statusCode });
+          }
+        });
+      });
+
+      req.on('error', (err) => {
+        console.error('[GOOGLE SHEETS] Form submission error:', err.message);
+        resolve({ success: false, error: err.message });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ success: false, error: 'Google Form submission timed out' });
+      });
+
+      req.write(postData);
+      req.end();
+    } catch (err) {
+      console.error('[GOOGLE SHEETS] Dispatch failed:', err.message);
+      resolve({ success: false, error: err.message });
+    }
+  });
+}
+
+/**
+ * Send new job to Google Sheet directly, plus optional Zapier/Apps Script webhooks
  */
 async function processJobIntegrations(job, settings) {
   const payload = {
@@ -140,11 +221,20 @@ async function processJobIntegrations(job, settings) {
   };
 
   const results = {
-    zapier: null,
-    google_sheet: null
+    google_sheet: null,
+    zapier: null
   };
 
-  // 1. Zapier Webhook
+  // 1. Direct automatic Google Sheet submission via Google Form (zero webhook needed!)
+  try {
+    console.log(`Syncing job ${job.id} directly to Google Sheet...`);
+    results.google_sheet = await submitToGoogleForm(job);
+  } catch (err) {
+    console.error('Direct Google Sheet submission error:', err);
+    results.google_sheet = { success: false, error: err.message };
+  }
+
+  // 2. Zapier Webhook (if configured by owner)
   if (settings && settings.zapier_webhook_url && settings.zapier_webhook_url.trim()) {
     try {
       console.log(`Sending job ${job.id} to Zapier webhook...`);
@@ -155,14 +245,14 @@ async function processJobIntegrations(job, settings) {
     }
   }
 
-  // 2. Google Apps Script / Sheet Webhook (if configured)
+  // 3. Google Apps Script Webhook (if configured by owner)
   if (settings && settings.google_apps_script_url && settings.google_apps_script_url.trim()) {
     try {
       console.log(`Appending job ${job.id} to Google Sheet via Apps Script webhook...`);
-      results.google_sheet = await sendWebhook(settings.google_apps_script_url, payload);
+      results.google_sheet_apps_script = await sendWebhook(settings.google_apps_script_url, payload);
     } catch (err) {
       console.error('Google Sheet webhook dispatch error:', err);
-      results.google_sheet = { success: false, error: err.message };
+      results.google_sheet_apps_script = { success: false, error: err.message };
     }
   }
 
@@ -173,5 +263,6 @@ module.exports = {
   normalizeNigerianPhone,
   normalizeDate,
   sendWebhook,
+  submitToGoogleForm,
   processJobIntegrations
 };
