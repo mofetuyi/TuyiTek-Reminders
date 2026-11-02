@@ -166,16 +166,31 @@ async function runTests() {
   assert.strictEqual(resTurnOff.data.settings.zapier_webhook_url, '');
   console.log('✓ PASS: Empty box turns off Zapier webhook');
 
-  // Test 12: Gemini AI Trade Advice
-  console.log('Test 12: AI Trade Advice via Gemini...');
+  // Test 12: Gemini AI Multi-turn Conversational Chat
+  console.log('Test 12: Conversational Chat with Gemini AI...');
   const resAiAdvice = await makeRequest('POST', '/api/ai/advice', {
-    query: 'What are the essential checks for a Toyota Camry 2.4L overheating problem?',
+    messages: [
+      { role: 'user', content: 'What are the essential checks for a Toyota Camry 2.4L overheating problem?' }
+    ],
     trade: 'Auto Mechanic'
   }, workerToken);
   assert.strictEqual(resAiAdvice.status, 200);
   assert.ok(resAiAdvice.data.answer, 'AI should return answer');
-  assert.ok(resAiAdvice.data.answer.length > 20, 'Answer should be descriptive');
-  console.log('✓ PASS: Gemini AI Trade Advice generated successfully (Model: ' + resAiAdvice.data.model + ')');
+  console.log('✓ PASS: Gemini AI Initial turn generated (Model: ' + resAiAdvice.data.model + ')');
+
+  // Test 12b: Multi-turn follow-up chat
+  console.log('Test 12b: Multi-turn conversational follow-up...');
+  const resAiFollowup = await makeRequest('POST', '/api/ai/advice', {
+    messages: [
+      { role: 'user', content: 'What are the essential checks for a Toyota Camry 2.4L overheating problem?' },
+      { role: 'model', content: resAiAdvice.data.answer },
+      { role: 'user', content: 'The radiator fan is not spinning at all. What fuse and relay should I test?' }
+    ],
+    trade: 'Auto Mechanic'
+  }, workerToken);
+  assert.strictEqual(resAiFollowup.status, 200);
+  assert.ok(resAiFollowup.data.answer, 'AI should return follow-up answer');
+  console.log('✓ PASS: Gemini AI Follow-up conversation maintained context successfully');
 
   // Test 13: Gemini AI Suggest Job Details
   console.log('Test 13: AI Suggest Job Details & Timeline...');

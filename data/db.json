@@ -5,7 +5,7 @@
     "google_sheet_id": "15oZab-gF3dFCInkIS49tRTF7jvErmvMcqC3-5T0eHX0",
     "google_sheet_tab": "Form responses 1",
     "google_apps_script_url": "",
-    "updated_at": "2026-11-02T09:54:27.308Z",
+    "updated_at": "2026-11-02T10:00:28.097Z",
     "auth_webhook_url": ""
   },
   "users": [
@@ -14,7 +14,7 @@
       "name": "Mofeoluwa Osanyintuyi",
       "email": "osanyintuyimofeoluwa@gmail.com",
       "created_at": "2026-10-03T09:10:43.371Z",
-      "last_login": "2026-11-02T09:54:27.290Z",
+      "last_login": "2026-11-02T10:00:28.080Z",
       "salt": "f0e6041424d4ed4c0adb9db0f6906eff",
       "passwordHash": "764e8f0616993ae9433bf523666dacde2f505676c78d1f178904de6df1fddcca037442a719b24eca486ed047c8b5c563ea4ff12355d5f77eae3aba6b633a4e92"
     },
@@ -51,6 +51,19 @@
       "agreedToTerms": true,
       "created_at": "2026-11-02T09:54:27.014Z",
       "last_login": "2026-11-02T09:54:27.073Z"
+    },
+    {
+      "id": "usr_9e6c0ee06825",
+      "firstName": "Babatunde",
+      "lastName": "Fashola",
+      "name": "Babatunde Fashola",
+      "email": "artisan_1793613627767@example.com",
+      "phone": "+2348141112233",
+      "passwordHash": "8ee27e264a1df9690baa77d2f6383028c39b9ef29f7eb3591e295ed51fd1ce4041abcdc1d37c27de161b8f39c356ba53ac4039ee093f8a18c542e026ca064b83",
+      "salt": "a7762d5ef88196772fdb2addde28022d",
+      "agreedToTerms": true,
+      "created_at": "2026-11-02T10:00:27.851Z",
+      "last_login": "2026-11-02T10:00:27.913Z"
     }
   ],
   "jobs": [
@@ -193,6 +206,20 @@
       "Last Reminder": "",
       "created_at": "2026-11-02T09:54:27.298Z",
       "created_by_user_id": "usr_82ff0719c919"
+    },
+    {
+      "id": "job_5b157673d7f9",
+      "Customer Name": "Babatunde Fashola",
+      "Customer Phone": "+2348023456789",
+      "Worker Phone": "+2348141112233",
+      "Item / Job": "Senator Suit 3-Piece Navy Blue",
+      "Job Details": "Italian wool, gold buttons, extra sleeve length",
+      "Collection Date": "2026-11-04",
+      "Notify Email": "babatunde.workshop@gmail.com",
+      "Business Name": "Lagos Heritage Tailors",
+      "Last Reminder": "",
+      "created_at": "2026-11-02T10:00:28.089Z",
+      "created_by_user_id": "usr_9e6c0ee06825"
     }
   ],
   "sessions": {
@@ -288,6 +315,27 @@
       "name": "Mofeoluwa Osanyintuyi",
       "phone": "",
       "expiresAt": 1796205267292
+    },
+    "tok_bb4d486b7d9a5dd35744f2e38ede59591e21a528d055ee68": {
+      "userId": "usr_9e6c0ee06825",
+      "email": "artisan_1793613627767@example.com",
+      "name": "Babatunde Fashola",
+      "phone": "+2348141112233",
+      "expiresAt": 1796205627854
+    },
+    "tok_0213283cd2e406b67ff011bf2fd22b74ae34996a98ec5500": {
+      "userId": "usr_9e6c0ee06825",
+      "email": "artisan_1793613627767@example.com",
+      "name": "Babatunde Fashola",
+      "phone": "+2348141112233",
+      "expiresAt": 1796205627915
+    },
+    "tok_65fba3a2e67a55efe964ce274933f139b8817ca9f1bf3779": {
+      "userId": "usr_owner_001",
+      "email": "osanyintuyimofeoluwa@gmail.com",
+      "name": "Mofeoluwa Osanyintuyi",
+      "phone": "",
+      "expiresAt": 1796205628081
     }
   }
 }

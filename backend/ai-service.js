@@ -10,19 +10,42 @@ class TradeAIService {
     return process.env.GEMINI_API_KEY || this.defaultApiKey;
   }
 
-  requestGemini(model, apiKey, prompt) {
+  getSystemPrompt(tradeCategory = 'General Trade') {
+    return `You are 'Job Booking AI', an expert, highly experienced, and warm Nigerian Trade Master & Workshop Partner.
+You are chatting with a Nigerian business owner, artisan, or mechanic in their workshop.
+Trades you specialize in:
+- Tailors & Fashion Designers (Ankara, Agbada, Senator, Senator collar, suit darting, lining, lace, fabric cuts)
+- Auto Mechanics & Panel Beaters (Toyota, Honda, Mercedes, Tokunbo parts, engine diagnostics, electrical, transmission, brake boosters, cooling systems)
+- Carpenters & Furniture Makers (Iroko, Teak, Obeche, Mahogany, MDF, sanding, joinery, varnishing, polyurethane, cabinet hinges)
+- Electricians & Solar/Inverter Technicians (Pure sine wave inverters, deep cycle/lithium batteries, cable sizing, conduit piping, changeover switches)
+- Plumbers & Handiworkers (PPR pipes, surface/submersible pumps, valves, leak detection)
+
+Personality & Conversational Style:
+1. Speak naturally, warmly, and respectfully (e.g. welcoming them as 'boss' or 'my friend', clear Nigerian workshop English).
+2. Answer conversationally. If they ask a follow-up, build on what was previously discussed in the chat.
+3. Be direct, practical, and step-by-step.
+4. Highlight safety precautions when relevant (disconnecting battery, safety goggles, circuit breakers).
+5. Give pro workshop tips that save time and prevent customer disputes.
+[Active Trade Focus: ${tradeCategory}]`;
+  }
+
+  requestGemini(model, apiKey, contents, systemPrompt = null) {
     return new Promise((resolve, reject) => {
-      const payload = JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }]
-          }
-        ],
+      const payloadObj = {
+        contents: contents,
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1000
+          maxOutputTokens: 1200
         }
-      });
+      };
+
+      if (systemPrompt) {
+        payloadObj.systemInstruction = {
+          parts: [{ text: systemPrompt }]
+        };
+      }
+
+      const payload = JSON.stringify(payloadObj);
 
       const options = {
         hostname: 'generativelanguage.googleapis.com',
@@ -46,7 +69,7 @@ class TradeAIService {
               if (text) {
                 resolve(text.trim());
               } else {
-                reject(new Error('No text returned in Gemini response'));
+                reject(new Error('No response text returned by model'));
               }
             } catch (err) {
               reject(new Error(`Failed to parse Gemini response: ${err.message}`));
@@ -68,54 +91,52 @@ class TradeAIService {
     });
   }
 
-  async generateResponse(systemPrompt, userQuery) {
+  /**
+   * Multi-turn conversational chat with Gemini
+   */
+  async chat(messages, tradeCategory = 'General Trade') {
     const apiKey = this.getApiKey();
-    const fullPrompt = `${systemPrompt}\n\nUSER QUESTION / REQUEST:\n${userQuery}`;
+    const systemPrompt = this.getSystemPrompt(tradeCategory);
 
-    // Try primary then fallback models
+    // Format conversation messages for Gemini API
+    const formattedContents = messages.map(m => ({
+      role: m.role === 'model' || m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: String(m.content || m.text || '').trim() }]
+    })).filter(c => c.parts[0].text.length > 0);
+
+    if (formattedContents.length === 0) {
+      throw new Error('No message provided.');
+    }
+
+    // Try primary model then fallback model
     for (const model of this.models) {
       try {
-        const text = await this.requestGemini(model, apiKey, fullPrompt);
+        const text = await this.requestGemini(model, apiKey, formattedContents, systemPrompt);
         return {
           success: true,
           model,
           response: text
         };
       } catch (err) {
-        console.warn(`[AI SERVICE] Model ${model} failed: ${err.message}. Trying next model...`);
+        console.warn(`[AI SERVICE] Model ${model} chat failed: ${err.message}. Trying next model...`);
       }
     }
 
-    // Fallback: Resilient offline knowledge base
-    console.warn('[AI SERVICE] All remote Gemini models failed. Using offline Nigerian trades fallback.');
+    // Offline fallback if network is completely down
+    const lastUserMsg = messages.filter(m => m.role === 'user').pop();
+    const query = lastUserMsg ? lastUserMsg.content : '';
     return {
       success: true,
       model: 'offline-artisan-knowledge',
-      response: this.getOfflineAdvice(userQuery)
+      response: this.getOfflineAdvice(query)
     };
   }
 
   /**
-   * General Trade Advice & Workshop Mentorship
+   * Single-turn trade advice (wraps into chat format)
    */
   async getTradeAdvice(query, tradeCategory = 'General Trade') {
-    const systemPrompt = `You are 'Job Booking AI', a highly experienced, friendly, and practical Nigerian Trade Master & Workshop Advisor.
-You mentor and advise Nigerian artisans and small business owners:
-- Tailors & Fashion Designers (Ankara, Senegalese, Agbada, suits, lace, measurements, darting, lining)
-- Auto Mechanics & Panel Beaters (Japanese & German cars, Toyota/Honda/Mercedes, engine diagnostics, transmission, Tokunbo parts, painting, suspension)
-- Carpenters & Furniture Makers (Hardwood like Iroko, Teak, Obeche, MDF, polishing, varnishing, joinery, hinges)
-- Electricians & Solar/Inverter Handiworkers (Wiring, changeover switches, inverters, load balancing, conduit piping)
-- Plumbers & Handiworkers (PPR pipes, surface pumps, sanitary fittings, leak repairs)
-
-Guidelines:
-1. Always be practical, respectful, and direct. Use friendly professional Nigerian workshop English (e.g. welcoming them warmly, clear terms).
-2. Give clear step-by-step points so it is easy to follow on a mobile phone.
-3. Mention relevant tools, parts, or material considerations.
-4. Include any necessary safety tips (e.g. battery disconnect, eye protection, grounding).
-5. If relevant, suggest how to communicate the issue clearly to the customer.`;
-
-    const cleanQuery = `[Trade Category: ${tradeCategory}]\n${query}`;
-    return this.generateResponse(systemPrompt, cleanQuery);
+    return this.chat([{ role: 'user', content: query }], tradeCategory);
   }
 
   /**
@@ -133,7 +154,26 @@ Format your output clearly with headings:
 - **Estimated Turnaround:** (e.g. 2 to 3 days)
 - **Pro Tip:**`;
 
-    return this.generateResponse(systemPrompt, `Item / Job title: ${itemJob}`);
+    const contents = [{
+      role: 'user',
+      parts: [{ text: `Item / Job title: ${itemJob}` }]
+    }];
+
+    const apiKey = this.getApiKey();
+    for (const model of this.models) {
+      try {
+        const text = await this.requestGemini(model, apiKey, contents, systemPrompt);
+        return { success: true, model, response: text };
+      } catch (err) {
+        console.warn(`[AI SERVICE] Suggest details on ${model} failed: ${err.message}`);
+      }
+    }
+
+    return {
+      success: true,
+      model: 'offline-artisan-knowledge',
+      response: this.getOfflineAdvice(itemJob)
+    };
   }
 
   /**
@@ -142,39 +182,34 @@ Format your output clearly with headings:
   getOfflineAdvice(query) {
     const q = (query || '').toLowerCase();
 
-    if (q.includes('overheat') || q.includes('radiator') || q.includes('camry') || q.includes('car') || q.includes('mechanic')) {
+    if (q.includes('overheat') || q.includes('radiator') || q.includes('camry') || q.includes('car') || q.includes('mechanic') || q.includes('brake') || q.includes('oil')) {
       return `### 🚗 Auto Mechanic Advice & Troubleshooting:
-1. **Cooling System Check:** Inspect radiator cap pressure, top-up coolant mix, check thermostat opening temperature.
+1. **Cooling & Oil System:** Inspect radiator cap pressure, check coolant level and oil viscosity.
 2. **Fan Operation:** Confirm radiator fans kick in at operating temperature (relay & sensor test).
-3. **Water Pump & Belts:** Verify serpentine belt tension and inspect water pump for weeping or play.
-4. **Safety First:** Never open a hot radiator cap. Allow the engine to cool down completely before releasing pressure.
-5. **Customer Advice:** Explain to the customer that driving with high engine temperature can warp cylinder heads or blow the head gasket.`;
+3. **Safety First:** Never open a hot radiator cap. Allow the engine to cool down completely before releasing pressure.
+4. **Customer Communication:** Explain to the customer that driving with high engine temperature can warp cylinder heads.`;
     }
 
-    if (q.includes('sew') || q.includes('agbada') || q.includes('ankara') || q.includes('gown') || q.includes('fabric') || q.includes('tailor')) {
+    if (q.includes('sew') || q.includes('agbada') || q.includes('ankara') || q.includes('gown') || q.includes('fabric') || q.includes('tailor') || q.includes('senator')) {
       return `### 🧵 Tailoring & Fashion Design Advice:
 1. **Fabric Measurement & Shrinkage:** Always pre-iron and check Ankara or Guinea Brocade for pre-shrinkage before cutting.
 2. **Pattern & Symmetry:** Fold fabric in 4 equal parts when cutting Agbada necklines or flared panels to maintain symmetry.
-3. **Interfacing & Finishing:** Use good quality collar stay/gumstay on collars and Senator neck bands to prevent bubbling after washing.
-4. **Fitting Allowance:** Leave 1.5 to 2 inches inner margin for seam adjustment in case the customer requests fitting adjustments.
-5. **Delivery Checklist:** Steam press neatly, trim all loose threads, and inspect all zips and buttonholes before customer collection.`;
+3. **Interfacing:** Use good quality gumstay on collars and Senator neck bands to prevent bubbling after washing.
+4. **Fitting Allowance:** Leave 1.5 to 2 inches inner margin for seam adjustment in case the customer requests adjustments.`;
     }
 
     if (q.includes('table') || q.includes('wood') || q.includes('carpenter') || q.includes('chair') || q.includes('furniture')) {
       return `### 🪚 Carpentry & Woodwork Advice:
-1. **Timber Moisture & Curing:** Ensure timber (Iroko, Teak, or Mahogany) is properly seasoned to prevent warping or splitting.
-2. **Joinery:** Use mortise and tenon or heavy dowels for load-bearing joints like dining table legs and chair stretchers.
-3. **Sanding Sequence:** Sand progressively with 80-grit, 120-grit, then 240-grit before applying sanding sealer.
-4. **Durable Finish:** Apply 2 to 3 coats of polyurethane lacquer or gloss varnish, sanding lightly between coats for a smooth finish.
-5. **Care Tip for Customer:** Advise the customer to keep natural wood away from standing water and clean with a damp microfiber cloth.`;
+1. **Timber Moisture:** Ensure timber (Iroko, Teak, or Mahogany) is properly seasoned to prevent warping.
+2. **Joinery:** Use mortise and tenon or heavy dowels for load-bearing joints.
+3. **Durable Finish:** Apply 2 to 3 coats of polyurethane lacquer or gloss varnish, sanding lightly between coats.`;
     }
 
     return `### 🛠️ Master Artisan Advice:
 1. **Detailed Scope:** Confirm exact customer requirements and inspect existing condition before taking deposit.
-2. **Quality Materials:** Never compromise on crucial parts (e.g. Tokunbo genuine parts or high-grade thread/screws) as callbacks damage reputation.
+2. **Quality Materials:** Never compromise on crucial parts as callbacks damage workshop reputation.
 3. **Timelines:** Always add 1 extra buffer day to your estimate to cater for power cuts or parts sourcing.
-4. **Customer Communication:** Send updates via WhatsApp if additional issues are discovered during disassembly.
-5. **Inspection Before Handover:** Double-check every function before the customer arrives on collection date.`;
+4. **Inspection Before Handover:** Double-check every function before the customer arrives on collection date.`;
   }
 }
 

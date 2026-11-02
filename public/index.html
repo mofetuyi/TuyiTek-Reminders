@@ -361,9 +361,14 @@
 
       <!-- AI Q&A Stream Card -->
       <div class="card card-section-purple" style="padding: 16px;">
-        <div class="section-header" style="margin-bottom: 12px; padding-bottom: 8px;">
-          <div class="section-icon purple">🤖</div>
-          <h3 class="section-title">Trade Consultation</h3>
+        <div class="section-header" style="margin-bottom: 12px; padding-bottom: 8px; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="section-icon purple">🤖</div>
+            <h3 class="section-title">Trade Consultation</h3>
+          </div>
+          <button type="button" class="btn-clear-chat" id="btnClearChat" style="background: #ede9fe; color: #7c3aed; border: none; padding: 4px 10px; border-radius: 8px; font-size: 0.76rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: var(--font-family);">
+            <span>🧹</span> Clear Chat
+          </button>
         </div>
 
         <div class="ai-chat-stream" id="aiChatStream">

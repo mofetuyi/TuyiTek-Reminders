@@ -915,10 +915,12 @@
   const aiAskForm = document.getElementById('aiAskForm');
   const aiQuestionInput = document.getElementById('aiQuestionInput');
   const btnAiSend = document.getElementById('btnAiSend');
+  const btnClearChat = document.getElementById('btnClearChat');
   const quickPromptButtons = document.querySelectorAll('.btn-prompt-pill');
 
   let currentTradeFilter = 'General Trade';
   let lastAiSuggestionRaw = '';
+  let chatHistory = []; // Multi-turn chat memory for full back-and-forth conversation
 
   // Simple Markdown Formatter
   function formatMarkdown(text) {
@@ -1041,6 +1043,24 @@
     });
   }
 
+  // Clear Chat Handler
+  if (btnClearChat) {
+    btnClearChat.addEventListener('click', () => {
+      chatHistory = [];
+      aiChatStream.innerHTML = `
+        <div class="ai-msg ai-msg-bot">
+          <div class="ai-msg-avatar">🤖</div>
+          <div class="ai-msg-bubble">
+            <p><strong>Hello boss! Chat refreshed.</strong></p>
+            <p style="margin-top: 4px;">Ask me anything about your current repair, cutting measurements, carpentry finishes, or customer advice!</p>
+          </div>
+        </div>
+      `;
+      showToast('Chat history cleared. Ready for a new discussion!', 'info');
+      aiQuestionInput.focus();
+    });
+  }
+
   async function submitTradeQuestion(questionText) {
     if (!authToken) {
       showToast('Please sign in first.', 'error');
@@ -1048,13 +1068,14 @@
       return;
     }
 
-    // Append user message to stream
+    // Add user message to conversation memory & append to UI
+    chatHistory.push({ role: 'user', content: questionText });
     appendChatMessage('user', questionText);
     aiQuestionInput.value = '';
 
     // Append temporary typing indicator
     const typingId = 'typing_' + Date.now();
-    appendChatMessage('bot', '<em>Thinking and analyzing your trade question with Gemini...</em>', typingId);
+    appendChatMessage('bot', '<em>Thinking and analyzing with Gemini AI...</em>', typingId);
 
     btnAiSend.disabled = true;
 
@@ -1066,7 +1087,7 @@
           'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
-          query: questionText,
+          messages: chatHistory,
           trade: currentTradeFilter
         })
       });
@@ -1077,14 +1098,19 @@
 
       if (!res.ok) throw new Error(data.error || 'Failed to get advice');
 
+      // Add AI response to conversation memory & append to UI
+      chatHistory.push({ role: 'model', content: data.answer });
       appendChatMessage('bot', data.answer);
 
     } catch (err) {
       const typingEl = document.getElementById(typingId);
       if (typingEl) typingEl.remove();
+      // Remove last user question from memory if failed
+      chatHistory.pop();
       appendChatMessage('bot', `⚠️ Could not reach Gemini AI: ${escapeHtml(err.message)}`);
     } finally {
       btnAiSend.disabled = false;
+      aiQuestionInput.focus();
     }
   }
 

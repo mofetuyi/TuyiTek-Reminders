@@ -253,16 +253,23 @@ router.post('/jobs', auth.requireAuth, async (req, res) => {
    ========================================================================== */
 
 /**
- * Get expert trade advice, workshop tips, and troubleshooting
+ * Get expert trade advice, workshop tips, and conversational troubleshooting
+ * Supports multi-turn chat via `messages` array
  */
 router.post('/ai/advice', auth.requireAuth, async (req, res) => {
   try {
-    const { query, trade } = req.body;
-    if (!query || !query.trim()) {
-      return res.status(400).json({ error: 'Please enter a trade question or describe your job issue.' });
+    const { query, messages, trade } = req.body;
+    let chatMessages = [];
+
+    if (Array.isArray(messages) && messages.length > 0) {
+      chatMessages = messages;
+    } else if (query && query.trim()) {
+      chatMessages = [{ role: 'user', content: query.trim() }];
+    } else {
+      return res.status(400).json({ error: 'Please enter a trade question or message.' });
     }
 
-    const result = await aiService.getTradeAdvice(query.trim(), trade || 'General Trade');
+    const result = await aiService.chat(chatMessages, trade || 'General Trade');
     res.json({
       success: true,
       answer: result.response,
